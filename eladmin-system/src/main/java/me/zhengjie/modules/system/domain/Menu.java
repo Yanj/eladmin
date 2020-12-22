@@ -15,17 +15,15 @@
  */
 package me.zhengjie.modules.system.domain;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.alibaba.fastjson.annotation.JSONField;
 import io.swagger.annotations.ApiModelProperty;
 import lombok.Getter;
 import lombok.Setter;
 import me.zhengjie.base.BaseEntity;
-import org.hibernate.annotations.CreationTimestamp;
+
 import javax.persistence.*;
-import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.NotNull;
 import java.io.Serializable;
-import java.sql.Timestamp;
 import java.util.Objects;
 import java.util.Set;
 
@@ -46,7 +44,7 @@ public class Menu extends BaseEntity implements Serializable {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @JsonIgnore
+    @JSONField(serialize = false)
     @ManyToMany(mappedBy = "menus")
     @ApiModelProperty(value = "菜单角色")
     private Set<Role> roles;
