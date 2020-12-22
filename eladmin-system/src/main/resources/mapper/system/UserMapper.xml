@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="me.zhengjie.modules.system.mapper.UserMapper">
+
+    <resultMap id="UserResultMap" type="me.zhengjie.modules.system.domain.User">
+        <result column="user_id" javaType="Long" property="id"/>
+        <result column="username" javaType="String" property="username"/>
+        <result column="nickName" javaType="String" property="nickName"/>
+        <result column="email" javaType="String" property="email"/>
+        <result column="phone" javaType="String" property="phone"/>
+        <result column="gender" javaType="String" property="gender"/>
+        <result column="avatarName" javaType="String" property="avatarName"/>
+        <result column="avatarPath" javaType="String" property="avatarPath"/>
+        <result column="password" javaType="String" property="password"/>
+        <result column="enabled" javaType="Boolean" property="enabled"/>
+        <result column="isAdmin" javaType="Boolean" property="isAdmin"/>
+    </resultMap>
+
+</mapper>

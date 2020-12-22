@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="me.zhengjie.modules.system.mapper.DictMapper">
+
+    <resultMap id="DictResultMap" type="me.zhengjie.modules.system.domain.Dict">
+        <result column="dict_id" javaType="Long" property="id"/>
+        <result column="name" javaType="String" property="name"/>
+        <result column="description" javaType="String" property="description"/>
+    </resultMap>
+
+    <select id="selectAll" resultMap="DictResultMap">
+        select dict.`dict_id`     `dict_id`,
+               dict.`name`        `name`,
+               dict.`description` `description`,
+               dict.`create_by`   `create_by`,
+               dict.`update_by`   `update_by`,
+               dict.`create_time` `create_time`,
+               dict.`update_time` `update_time`
+        from sys_dict dict;
+    </select>
+
+</mapper>

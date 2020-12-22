@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="me.zhengjie.modules.system.mapper.MenuMapper">
+
+    <resultMap id="menuResultMap" type="me.zhengjie.modules.system.domain.Menu">
+        <result column="menu_id" javaType="Long" property="id"/>
+        <result column="title" javaType="String" property="title"/>
+        <result column="name" javaType="String" property="componentName"/>
+        <result column="component" javaType="String" property="component"/>
+        <result column="path" javaType="String" property="path"/>
+        <result column="type" javaType="Integer" property="type"/>
+        <result column="permission" javaType="String" property="permission"/>
+        <result column="icon" javaType="String" property="icon"/>
+        <result column="cache" javaType="Boolean" property="cache"/>
+        <result column="hidden" javaType="Boolean" property="hidden"/>
+        <result column="pid" javaType="Long" property="pid"/>
+        <result column="subCount" javaType="Integer" property="subCount"/>
+        <result column="iFrame" javaType="Boolean" property="iFrame"/>
+    </resultMap>
+
+</mapper>

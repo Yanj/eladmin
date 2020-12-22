@@ -4,9 +4,9 @@ spring:
     druid:
       db-type: com.alibaba.druid.pool.DruidDataSource
       driverClassName: net.sf.log4jdbc.sql.jdbcapi.DriverSpy
-      url: jdbc:log4jdbc:mysql://${DB_HOST:localhost}:${DB_PORT:3306}/${DB_NAME:eladmin}?serverTimezone=Asia/Shanghai&characterEncoding=utf8&useSSL=false
-      username: ${DB_USER:root}
-      password: ${DB_PWD:123456}
+      url: jdbc:log4jdbc:mysql://${DB_HOST:127.0.0.1}:${DB_PORT:3306}/${DB_NAME:eladmin}?serverTimezone=Asia/Shanghai&characterEncoding=utf8&useSSL=false
+      username: ${DB_USER:eladmin}
+      password: ${DB_PWD:eladmin}
       # 初始连接数
       initial-size: 5
       # 最小连接数
@@ -120,3 +120,12 @@ file:
   # 文件大小 /M
   maxSize: 100
   avatarMaxSize: 5
+
+# his 配置
+his:
+  server:
+    protocol: http
+    host: 171.221.244.91
+    port: 8080
+    path: Web_kbj.asmx
+    opName: GetCkItem

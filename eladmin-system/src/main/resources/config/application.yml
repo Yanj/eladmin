@@ -8,6 +8,7 @@ spring:
     active: dev
   jackson:
     time-zone: GMT+8
+#    fail-on-empty-beans: false
   data:
     redis:
       repositories:
@@ -29,6 +30,15 @@ spring:
     password: ${REDIS_PWD:}
     #连接超时时间
     timeout: 5000
+
+mybatis:
+  type-aliases-package: me.zhengjie.modules.*.domain
+  mapper-locations: classpath:mapper/**/*.xml
+#
+#mapper:
+#  mappers:
+#    - tk.mybatis.mapper.common.Mapper
+#  not-empty: true
 
 task:
   pool:

@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="me.zhengjie.modules.system.mapper.DictDetailMapper">
+
+    <resultMap id="DictDetailResultMap" type="me.zhengjie.modules.system.domain.DictDetail">
+        <result column="detail_id" javaType="Long" property="id"/>
+        <result column="label" javaType="String" property="label"/>
+        <result column="value" javaType="String" property="value"/>
+        <result column="dictSort" javaType="Integer" property="dictSort"/>
+    </resultMap>
+
+    <select id="selectAll" resultMap="DictDetailResultMap">
+        select dict_detail.detail_id   detail_id,
+               dict_detail.dict_id     dict_id,
+               dict_detail.`label`     `label`,
+               dict_detail.`value`     `value`,
+               dict_detail.dict_sort   dict_sort,
+               dict_detail.create_by   create_by,
+               dict_detail.update_by   update_by,
+               dict_detail.create_time create_time,
+               dict_detail.update_time update_time
+        from sys_dict_detail dict_detail;
+    </select>
+
+</mapper>

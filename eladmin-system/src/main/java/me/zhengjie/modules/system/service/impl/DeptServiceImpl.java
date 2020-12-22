@@ -108,6 +108,18 @@ public class DeptServiceImpl implements DeptService {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void create(Dept resources) {
+        // 更新 level
+        if (null != resources.getPid()) { // 有上级部门
+            DeptDto parent = findById(resources.getPid());
+            int level = 0;
+            if (null != parent.getLevel()) {
+                level = parent.getLevel();
+            }
+            resources.setLevel(level + 1);
+        } else {
+            resources.setLevel(0);
+        }
+
         deptRepository.save(resources);
         // 计算子节点数目
         resources.setSubCount(0);
@@ -127,6 +139,15 @@ public class DeptServiceImpl implements DeptService {
         Dept dept = deptRepository.findById(resources.getId()).orElseGet(Dept::new);
         ValidationUtil.isNull( dept.getId(),"Dept","id",resources.getId());
         resources.setId(dept.getId());
+
+        // 更新 level
+        if (newPid == null) {
+            resources.setLevel(0);
+        } else {
+            DeptDto parent = findById(resources.getPid());
+            resources.setLevel(parent.getLevel() + 1);
+        }
+
         deptRepository.save(resources);
         // 更新父节点中子节点数目
         updateSubCnt(oldPid);

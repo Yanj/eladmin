@@ -37,6 +37,7 @@ import org.springframework.web.bind.annotation.RestController;
 @EnableAsync
 @RestController
 @Api(hidden = true)
+//@tk.mybatis.spring.annotation.MapperScan(basePackages = "me.zhengjie.modules")
 @SpringBootApplication
 @EnableTransactionManagement
 @EnableJpaAuditing(auditorAwareRef = "auditorAware")

@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="me.zhengjie.modules.system.mapper.DeptMapper">
+
+    <resultMap id="DeptResultMap" type="me.zhengjie.modules.system.domain.Dept">
+        <result column="dept_id" javaType="Long" property="id"/>
+        <result column="name" javaType="String" property="name"/>
+        <result column="enabled" javaType="Boolean" property="enabled"/>
+        <result column="pid" javaType="Long" property="pid"/>
+        <result column="subCount" javaType="Integer" property="subCount"/>
+        <result column="level" javaType="Integer" property="level"/>
+    </resultMap>
+
+    <select id="selectAll" resultMap="DeptResultMap">
+        select dept.`dept_id`     `dept_id`,
+               dept.`pid`         `pid`,
+               dept.`sub_count`   `sub_count`,
+               dept.`level`       `level`,
+               dept.`name`        `name`,
+               dept.`dept_sort`   `dept_sort`,
+               dept.`enabled`     `enabled`,
+               dept.`create_by`   `create_by`,
+               dept.`update_by`   `update_by`,
+               dept.`create_time` `create_time`,
+               dept.`create_by`   `update_time`
+        from sys_dept dept
+    </select>
+
+</mapper>

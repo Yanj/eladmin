@@ -46,6 +46,8 @@ public class DeptDto extends BaseDTO implements Serializable {
 
     private Integer subCount;
 
+    private Integer level;
+
     public Boolean getHasChildren() {
         return subCount > 0;
     }

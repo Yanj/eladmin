@@ -15,11 +15,15 @@
  */
 package me.zhengjie.modules.system.domain;
 
+import cn.hutool.core.bean.BeanUtil;
+import cn.hutool.core.bean.copier.CopyOptions;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import io.swagger.annotations.ApiModelProperty;
 import lombok.Getter;
 import lombok.Setter;
 import me.zhengjie.base.BaseEntity;
+import me.zhengjie.modules.recovery.domain.RcvUser;
+
 import javax.persistence.*;
 import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.NotNull;
@@ -28,13 +32,13 @@ import java.util.Objects;
 import java.util.Set;
 
 /**
-* @author Zheng Jie
-* @date 2019-03-25
-*/
+ * @author Zheng Jie
+ * @date 2019-03-25
+ */
 @Entity
 @Getter
 @Setter
-@Table(name="sys_dept")
+@Table(name = "sys_dept")
 public class Dept extends BaseEntity implements Serializable {
 
     @Id
@@ -48,6 +52,11 @@ public class Dept extends BaseEntity implements Serializable {
     @ManyToMany(mappedBy = "depts")
     @ApiModelProperty(value = "角色")
     private Set<Role> roles;
+
+    @JsonIgnore
+    @ManyToMany(mappedBy = "depts")
+    @ApiModelProperty(value = "患者")
+    private Set<RcvUser> rcvUsers;
 
     @ApiModelProperty(value = "排序")
     private Integer deptSort;
@@ -66,6 +75,9 @@ public class Dept extends BaseEntity implements Serializable {
     @ApiModelProperty(value = "子节点数目", hidden = true)
     private Integer subCount = 0;
 
+    @ApiModelProperty(value = "等级")
+    private Integer level;
+
     @Override
     public boolean equals(Object o) {
         if (this == o) {
@@ -82,5 +94,9 @@ public class Dept extends BaseEntity implements Serializable {
     @Override
     public int hashCode() {
         return Objects.hash(id, name);
+    }
+
+    public void copy(Dept source) {
+        BeanUtil.copyProperties(source, this, CopyOptions.create().setIgnoreNullValue(true));
     }
 }
