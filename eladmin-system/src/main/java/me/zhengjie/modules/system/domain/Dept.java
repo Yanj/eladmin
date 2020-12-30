@@ -17,13 +17,11 @@ package me.zhengjie.modules.system.domain;
 
 import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.core.bean.copier.CopyOptions;
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.alibaba.fastjson.annotation.JSONField;
 import io.swagger.annotations.ApiModelProperty;
 import lombok.Getter;
 import lombok.Setter;
 import me.zhengjie.base.BaseEntity;
-import me.zhengjie.modules.recovery.domain.RcvUser;
 
 import javax.persistence.*;
 import javax.validation.constraints.NotBlank;
@@ -53,11 +51,6 @@ public class Dept extends BaseEntity implements Serializable {
     @ManyToMany(mappedBy = "depts")
     @ApiModelProperty(value = "角色")
     private Set<Role> roles;
-
-    @JsonIgnore
-    @ManyToMany(mappedBy = "depts")
-    @ApiModelProperty(value = "患者")
-    private Set<RcvUser> rcvUsers;
 
     @ApiModelProperty(value = "排序")
     private Integer deptSort;
