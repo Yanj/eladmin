@@ -53,10 +53,10 @@ public interface ResourceGroupService {
      * 查询套餐对应的资源分组
      *
      * @param deptId .
-     * @param termId .
+     * @param termCode .
      * @return .
      */
-    List<ResourceGroupDto> queryByDeptIdAndTermId(Long deptId, Long termId);
+    List<ResourceGroupDto> queryByDeptIdAndTermCode(Long deptId, String termCode);
 
     /**
      * 根据ID查询

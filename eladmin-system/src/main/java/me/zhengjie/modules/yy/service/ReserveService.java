@@ -70,7 +70,7 @@ public interface ReserveService {
      *
      * @param resources /
      */
-    ReserveDto verify(ReserveVerify resources);
+    ReserveDto verify(Reserve resources);
 
     /**
      * 取消

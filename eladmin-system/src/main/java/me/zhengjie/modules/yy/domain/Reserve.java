@@ -15,6 +15,7 @@ import org.springframework.data.annotation.LastModifiedBy;
 import javax.persistence.*;
 import java.io.Serializable;
 import java.sql.Timestamp;
+import java.util.Set;
 
 /**
  * @author yanjun
@@ -59,6 +60,11 @@ public class Reserve implements Serializable {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "work_time_id")
     private WorkTime workTime;
+
+    @JSONField(serialize = false)
+    @OneToMany(fetch = FetchType.LAZY)
+    @JoinColumn(name = "reserve_id", referencedColumnName = "id")
+    private Set<ReserveResource> reserveResources;
 
     private String date;
 

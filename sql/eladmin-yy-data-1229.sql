@@ -29,15 +29,15 @@ INSERT INTO `yy_resource` (`id`, `dept_id`, `resource_category_id`, `name`, `cou
 ('10', '32', '12', '中医医生001', '1', NULL, NULL),
 ('11', '32', '12', '中医医生002', '1', NULL, NULL);
 
-INSERT INTO `yy_resource_category` (`id`, `dept_id`, `name`, `status`, `remark`) VALUES
-('5', '32', 'INDIBA', NULL, NULL),
-('6', '32', '产后塑形仪', NULL, NULL),
-('7', '32', '菲蜜丽', NULL, NULL),
-('8', '32', '骨盆理疗床', NULL, NULL),
-('9', '32', '理疗师', NULL, NULL),
-('10', '32', '盆底修复A', NULL, NULL),
-('11', '32', '盆底修复B', NULL, NULL),
-('12', '32', '中医医生', NULL, NULL);
+INSERT INTO `yy_resource_category` (`id`, `dept_id`, `name`, `count`, `status`, `remark`) VALUES
+('5', '32', 'INDIBA', '1', NULL, NULL),
+('6', '32', '产后塑形仪', '4', NULL, NULL),
+('7', '32', '菲蜜丽', '1', NULL, NULL),
+('8', '32', '骨盆理疗床', '2', NULL, NULL),
+('9', '32', '理疗师', '1', NULL, NULL),
+('10', '32', '盆底修复A', '2', NULL, NULL),
+('11', '32', '盆底修复B', '2', NULL, NULL),
+('12', '32', '中医医生', '2', NULL, NULL);
 
 INSERT INTO `yy_resource_group` (`id`, `dept_id`, `name`, `status`, `remark`) VALUES
 ('33', '32', '产后塑形仪', NULL, NULL),

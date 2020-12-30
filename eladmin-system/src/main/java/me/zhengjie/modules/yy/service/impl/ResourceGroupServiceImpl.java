@@ -54,8 +54,8 @@ public class ResourceGroupServiceImpl implements ResourceGroupService {
     }
 
     @Override
-    public List<ResourceGroupDto> queryByDeptIdAndTermId(Long deptId, Long termId) {
-        return mapper.toDto(repository.findAllByDeptIdAndTermId(deptId, termId));
+    public List<ResourceGroupDto> queryByDeptIdAndTermCode(Long deptId, String termCode) {
+        return mapper.toDto(repository.findAllByDeptIdAndTermCode(deptId, termCode));
     }
 
     @Transactional

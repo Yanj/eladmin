@@ -32,6 +32,8 @@ public class ResourceCategory implements Serializable {
 
     private String name;
 
+    private Integer count;
+
     private String status;
 
     private String remark;

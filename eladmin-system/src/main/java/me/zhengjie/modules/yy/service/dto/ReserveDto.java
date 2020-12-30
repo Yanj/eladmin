@@ -3,9 +3,11 @@ package me.zhengjie.modules.yy.service.dto;
 import lombok.Getter;
 import lombok.Setter;
 import me.zhengjie.modules.system.service.dto.DeptSmallDto;
+import me.zhengjie.modules.yy.domain.ReserveResource;
 
 import java.io.Serializable;
 import java.sql.Timestamp;
+import java.util.Set;
 
 /**
  * @author yanjun
@@ -34,6 +36,8 @@ public class ReserveDto implements Serializable {
     private WorkTimeSmallDto workTime;
 
     private Long workTimeId;
+
+    private Set<ReserveResourceDto> reserveResources;
 
     private String date;
 

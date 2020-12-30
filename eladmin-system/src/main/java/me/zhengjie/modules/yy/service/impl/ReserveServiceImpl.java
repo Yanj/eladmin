@@ -41,6 +41,7 @@ public class ReserveServiceImpl implements ReserveService {
     private final ResourceGroupRepository resourceGroupRepository;
     private final ResourceCategoryRepository resourceCategoryRepository;
     private final ResourceRepository resourceRepository;
+    private final ReserveResourceRepository reserveResourceRepository;
     private final ReserveLogRepository reserveLogRepository;
     private final ReserveVerifyRepository reserveVerifyRepository;
     private final SmsRepository smsRepository;
@@ -237,39 +238,32 @@ public class ReserveServiceImpl implements ReserveService {
         if (null == resourceGroup.getId()) {
             throw new RuntimeException("资源组不存在");
         }
-        // 获取可用资源数量
-        List<Map<String,Object>> categoryCountMap = repository.queryCategoryCount();
-        // 获取已用资源数量
-        List<Map<String, Object>> categoryUseCountMap = repository.queryCategoryCount(resources.getDept().getId(), resources.getDate(), resources.getWorkTime().getId());
 
-        long available = Long.MAX_VALUE;
-        for (ResourceCategory category : resourceGroup.getResourceCategories()) {
-            Long count = 0L;
-
-            for (Map<String, Object> categoryCount : categoryCountMap) {
-                if (Objects.equals(categoryCount.get("resource_category_id").toString(), category.getId().toString())) {
-                    if (null != categoryCount.get("count")) {
-                        count = Long.parseLong(categoryCount.get("count").toString());
-                    }
-                    break;
-                }
-            }
-
-            Long useCount = 0L;
-            for (Map<String, Object> categoryUseCount : categoryUseCountMap) {
-                if (Objects.equals(categoryUseCount.get("resource_category_id").toString(), category.getId().toString())) {
-                    if (null != categoryUseCount.get("count")) {
-                        useCount = Long.parseLong(categoryUseCount.get("count").toString());
-                    }
-                    break;
-                }
-            }
-            long last = count - useCount;
-            last = last < 0 ? 0: last;
-            available = Math.min(last, available);
+        // 判断是否在该时段内已经有预约
+        Long reservedCount = repository.countByPatientTerm(resources.getDept().getId(), patient.getId(), patientTerm.getId(), resources.getDate(), resources.getWorkTime().getId());
+        if (null != reservedCount && reservedCount > 0) {
+            throw new RuntimeException("该时段已预约, 请勿重复预约");
         }
-        if (available <= 0) {
-            throw new RuntimeException("可用资源不足");
+
+        // 查询资源在时间段内的使用数量
+        List<Map<String, Object>> categoryUseCountMap = repository.queryReserveResourceCount(resources.getDept().getId(), resources.getDate(),
+                resources.getWorkTime().getId());
+        // 查询资源组下的所有分类
+        Set<ResourceCategory> resourceCategories = resourceGroup.getResourceCategories();
+        if (null != resourceCategories && !resourceCategories.isEmpty()) {
+            for (ResourceCategory resourceCategory : resourceCategories) {
+                long useCount = 0;
+                for (Map<String, Object> categoryUseCount : categoryUseCountMap) {
+                    if (Objects.equals(categoryUseCount.get("resource_category_id").toString(), resourceCategory.getId().toString())) {
+                        useCount = Long.parseLong(categoryUseCount.get("count").toString());
+                        break;
+                    }
+                }
+                long count = null == resourceCategory.getCount() ? 0 : resourceCategory.getCount();
+                if (count - useCount <= 0) {
+                    throw new RuntimeException("可用资源不足: " + resourceCategory.getName());
+                }
+            }
         }
 
         // 扣次数
@@ -279,13 +273,27 @@ public class ReserveServiceImpl implements ReserveService {
 
         // 新增
         resources.setStatus("init");
-        ReserveDto res = mapper.toDto(repository.save(resources));
+        Reserve reserve = repository.save(resources);
+
+        // 新增预约资源
+        if (null != resourceCategories && !resourceCategories.isEmpty()) {
+            List<ReserveResource> resourceList = new ArrayList<>();
+            for (ResourceCategory resourceCategory : resourceCategories) {
+                ReserveResource resource = new ReserveResource();
+                resource.setReserve(reserve);
+                resource.setResourceGroup(resourceGroup);
+                resource.setResourceCategory(resourceCategory);
+                resource.setResource(null);
+                resourceList.add(resource);
+            }
+            reserveResourceRepository.saveAll(resourceList);
+        }
 
         // 发送短信
         if (!StringUtils.isEmpty(patient.getPhone())) {
             Sms sms = new Sms();
             sms.setBusType("reserve");
-            sms.setBusId(res.getId());
+            sms.setBusId(reserve.getId());
             sms.setMobile(patient.getPhone());
             String content = String.format("您购买的套餐[%s], 已预约成功, 请于%s %s前到我院使用, 感谢您的信任, %s",
                     patientTerm.getTermName(), resources.getDate(), resources.getBeginTime(), resources.getDept().getName());
@@ -303,23 +311,30 @@ public class ReserveServiceImpl implements ReserveService {
         patientTermLog.setContent("预约新增");
         patientTermLogRepository.save(patientTermLog);
 
-        return res;
+        return mapper.toDto(reserve);
     }
 
     @Transactional
     @Override
-    public ReserveDto verify(ReserveVerify resources) {
-        if (null != resources.getId()) {
-            throw new RuntimeException("不允许修改");
-        }
-        if (null == resources.getReserve() || null == resources.getReserve().getId()) {
-            throw new RuntimeException("预约不能为空");
-        }
+    public ReserveDto verify(Reserve resources) {
         if (null == resources.getResourceGroup()) {
             throw new RuntimeException("资源组不能为空");
         }
+        if (null == resources.getReserveResources()) {
+            throw new RuntimeException("资源不能为空");
+        }
+        for (ReserveResource resource : resources.getReserveResources()) {
+            if (null == resource || null == resource.getId() || null == resource.getResource() || null == resource.getResource().getId()) {
+                String name = null;
+                if (null != resource && null != resource.getResourceCategory()) {
+                    name = resource.getResourceCategory().getName();
+                }
+                throw new RuntimeException("资源不能为空: " + name);
+            }
+        }
 
-        Reserve reserve = repository.getReserveForUpdate(resources.getReserve().getId());
+        // 判断预约的状态
+        Reserve reserve = repository.getReserveForUpdate(resources.getId());
         if (null == reserve) {
             throw new RuntimeException("预约不存在");
         }
@@ -352,35 +367,17 @@ public class ReserveServiceImpl implements ReserveService {
             throw new RuntimeException("资源组不存在");
         }
 
-        // 判断资源
-        Set<Resource> resourceSet = new HashSet<>();
-        if (null != resourceGroup.getResourceCategories() && null != resources.getResources()) {
-            for (Resource resource : resources.getResources()) {
-                if (null == resource || null == resource.getId()) {
-                    throw new RuntimeException("资源不能为空");
-                }
-                resource = resourceRepository.findById(resource.getId()).orElseGet(Resource::new);
-                if (null == resource.getId()) {
-                    throw new RuntimeException("资源不存在");
-                }
-
-                for (ResourceCategory resourceCategory : resourceGroup.getResourceCategories()) {
-                    if (null == resourceCategory || null == resourceCategory.getId()) {
-                        continue;
-                    }
-
-                    if (Objects.equals(resource.getResourceCategory().getId(), resourceCategory.getId())) {
-                        resourceSet.add(resource);
-                    }
-                }
+        // 更新预约资源
+        for (ReserveResource resource : resources.getReserveResources()) {
+            ReserveResource reserveResource = reserveResourceRepository.findById(resource.getId()).orElseGet(ReserveResource::new);
+            if (null == reserveResource.getId()) {
+                throw new RuntimeException("预约资源不存在: " + resource.getId());
             }
+            reserveResource.copy(resource);
+            reserveResourceRepository.save(reserveResource);
         }
-        resources.setResources(resourceSet);
 
-        // 保存
-        reserveVerifyRepository.save(resources);
-
-        // 更新状态
+        // 更新预约状态
         final String oldStatus = reserve.getStatus();
         reserve.setStatus("verified");
         repository.save(reserve);
@@ -457,6 +454,9 @@ public class ReserveServiceImpl implements ReserveService {
         final String oldStatus = reserve.getStatus();
         reserve.setStatus("canceled");
         repository.save(reserve);
+
+        // 删除资源
+        reserveResourceRepository.deleteByReserveId(reserve.getId());
 
         // 发送短信
         if (!StringUtils.isEmpty(patient.getPhone())) {
@@ -565,6 +565,7 @@ public class ReserveServiceImpl implements ReserveService {
     public void deleteAll(Long[] ids) {
         for (Long id : ids) {
             repository.deleteById(id);
+            reserveResourceRepository.deleteByReserveId(id);
         }
     }
 

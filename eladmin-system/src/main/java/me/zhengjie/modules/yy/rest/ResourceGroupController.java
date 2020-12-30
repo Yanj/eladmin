@@ -44,8 +44,8 @@ public class ResourceGroupController {
     @ApiOperation("查询套餐对应资源分组")
     @GetMapping("/term")
     @AnonymousAccess
-    public ResponseEntity<Object> query(@RequestParam Long deptId, @RequestParam Long termId) {
-        return new ResponseEntity<>(resourceGroupService.queryByDeptIdAndTermId(deptId, termId), HttpStatus.OK);
+    public ResponseEntity<Object> query(@RequestParam Long deptId, @RequestParam String termCode) {
+        return new ResponseEntity<>(resourceGroupService.queryByDeptIdAndTermCode(deptId, termCode), HttpStatus.OK);
     }
 
     @ApiOperation("获取单个资源分组")

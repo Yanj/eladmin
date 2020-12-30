@@ -16,7 +16,7 @@ public interface ResourceGroupRepository extends JpaRepository<ResourceGroup, Lo
 
     List<ResourceGroup> findAllByDeptId(Long deptId);
 
-    @Query("select rg from ResourceGroup rg left join fetch rg.terms tm where rg.dept.id = :deptId and tm.id = :termId")
-    List<ResourceGroup> findAllByDeptIdAndTermId(@Param("deptId") Long deptId, @Param("termId") Long termId);
+    @Query("select rg from ResourceGroup rg left join fetch rg.terms tm where rg.dept.id = :deptId and tm.code = :termCode")
+    List<ResourceGroup> findAllByDeptIdAndTermCode(@Param("deptId") Long deptId, @Param("termCode") String termCode);
 
 }

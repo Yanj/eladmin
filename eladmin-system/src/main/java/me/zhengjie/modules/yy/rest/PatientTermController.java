@@ -37,6 +37,14 @@ public class PatientTermController {
         patientTermService.download(patientTermService.queryAll(criteria), response);
     }
 
+    @Log("查询单个患者套餐")
+    @ApiOperation("查询单个患者套餐")
+    @GetMapping("/{id}")
+    @AnonymousAccess
+    public ResponseEntity<Object> query(@PathVariable Long id) {
+        return new ResponseEntity<>(patientTermService.findById(id), HttpStatus.OK);
+    }
+
     @Log("查询患者套餐")
     @ApiOperation("查询患者套餐")
     @GetMapping

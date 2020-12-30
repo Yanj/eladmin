@@ -16,9 +16,52 @@ import java.util.Map;
  */
 public interface ReserveRepository extends JpaRepository<Reserve, Long>, JpaSpecificationExecutor<Reserve> {
 
+    /**
+     * 锁行更新
+     */
     @Lock(value = LockModeType.PESSIMISTIC_WRITE)
     @Query("from Reserve where id = ?1")
     Reserve getReserveForUpdate(Long id);
+
+    /**
+     * 查询同一个套餐同一时段的预约数量
+     * @param deptId .
+     * @param patientId .
+     * @param patientTermId .
+     * @param date .
+     * @param workTimeId .
+     * @return .
+     */
+    @Query(value = "" +
+            "select count(r) from Reserve r " +
+            "where 1=1 " +
+            "and r.dept.id = ?1 " +
+            "and r.patient.id = ?2 " +
+            "and r.patientTerm.id = ?3 " +
+            "and r.date = ?4 " +
+            "and r.workTime.id = ?5 " +
+            "and r.status <> 'canceled'")
+    Long countByPatientTerm(Long deptId, Long patientId, Long patientTermId, String date, Long workTimeId);
+
+    /**
+     * 查询分类资源已预约数量
+     */
+    /*
+select rr.resource_category_id, count(rr.resource_category_id) as count
+from yy_reserve re
+right join yy_reserve_resource rr on re.id = rr.reserve_id
+where re.dept_id = 0 and re.date = '' and re.work_time_id = 0
+group by rr.resource_category_id
+     */
+    @Query(value = "" +
+            "select rr.resource_category_id as resource_category_id, count(rr.resource_category_id) as count " +
+            "from yy_reserve re " +
+            "right join yy_reserve_resource rr on re.id = rr.reserve_id " +
+            "where re.dept_id = ?1 and re.date = ?2 and re.work_time_id = ?3 and rr.resource_id is null " +
+            "group by rr.resource_category_id",
+            nativeQuery = true
+    )
+    List<Map<String, Object>> queryReserveResourceCount(Long deptId, String date, Long workTimeId);
 
     /**
      * 查询分类资源总数
@@ -63,7 +106,7 @@ group by rgc.resource_category_id;
 
     @Query(value = "select " +
             "dept_id as dept_id, `date` as `date`, work_time_id as work_time_id, term_id as term_id, count(1) as count " +
-            "from yy_reserve where dept_id = ?1 " +
+            "from yy_reserve where status <> 'canceled' and dept_id = ?1 " +
             "group by dept_id, `date`, work_time_id, term_id",
             nativeQuery = true
     )
@@ -71,7 +114,7 @@ group by rgc.resource_category_id;
 
     @Query(value = "select " +
             "dept_id as dept_id, `date` as `date`, work_time_id as work_time_id, term_id as term_id, count(1) as count " +
-            "from yy_reserve where dept_id = ?1 and `date` = ?2 " +
+            "from yy_reserve where status <> 'canceled' and dept_id = ?1 and `date` = ?2 " +
             "group by dept_id, `date`, work_time_id, term_id",
             nativeQuery = true
     )
@@ -79,7 +122,7 @@ group by rgc.resource_category_id;
 
     @Query(value = "select " +
             "dept_id as dept_id, `date` as `date`, work_time_id as work_time_id, term_id as term_id, count(1) as count " +
-            "from yy_reserve where dept_id = ?1 and `date` = ?2 and term_id = ?3 " +
+            "from yy_reserve where status <> 'canceled' and dept_id = ?1 and `date` = ?2 and term_id = ?3 " +
             "group by dept_id, `date`, work_time_id, term_id",
             nativeQuery = true
     )
@@ -87,7 +130,7 @@ group by rgc.resource_category_id;
 
     @Query(value = "select " +
             "dept_id as dept_id, `date` as `date`, work_time_id as work_time_id, term_id as term_id, count(1) as count " +
-            "from yy_reserve where dept_id = ?1 and `date` = ?2 and term_id = ?3 and resource_group_id = ?4 " +
+            "from yy_reserve where status <> 'canceled' and dept_id = ?1 and `date` = ?2 and term_id = ?3 and resource_group_id = ?4 " +
             "group by dept_id, `date`, work_time_id, term_id",
             nativeQuery = true
     )

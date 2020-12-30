@@ -6,7 +6,6 @@ import lombok.RequiredArgsConstructor;
 import me.zhengjie.annotation.AnonymousAccess;
 import me.zhengjie.annotation.Log;
 import me.zhengjie.modules.yy.domain.Reserve;
-import me.zhengjie.modules.yy.domain.ReserveVerify;
 import me.zhengjie.modules.yy.service.ReserveService;
 import me.zhengjie.modules.yy.service.dto.ReserveCountCriteria;
 import me.zhengjie.modules.yy.service.dto.ReserveCriteria;
@@ -65,7 +64,7 @@ public class ReserveController {
     @ApiOperation("预约取消")
     @PostMapping("/verify")
     @AnonymousAccess
-    public ResponseEntity<Object> verify(@RequestBody ReserveVerify resources) {
+    public ResponseEntity<Object> verify(@RequestBody Reserve resources) {
         return new ResponseEntity<>(reserveService.verify(resources), HttpStatus.OK);
     }
 

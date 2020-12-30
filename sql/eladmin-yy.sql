@@ -82,7 +82,8 @@ drop table if exists yy_resource_category;
 create table if not exists yy_resource_category
 (
     id      bigint(20) not null AUTO_INCREMENT comment 'id',
-    dept_id bigint(20) not null comment '部门 id',name   varchar(50) not null comment '名称',
+    dept_id bigint(20) not null comment '部门 id',
+    `name`  varchar(50) not null comment '名称',
     `count` int default 0 comment '资源总数',
     status  varchar(50) comment '状态',
     remark  varchar(255) comment '备注',
@@ -241,11 +242,12 @@ alter table yy_reserve_resource comment '预约核销资源';
 drop table if exists yy_reserve_resource;
 create table if not exists yy_reserve_resource
 (
+    id                   bigint(20) not null AUTO_INCREMENT comment 'id',
     reserve_id           bigint(20) not null comment '预约id',
-    resource_group_id    bigint(20) not null comment '资源分组id',
     resource_category_id bigint(20) not null comment '资源分类id',
+    resource_group_id    bigint(20) comment '资源分组id',
     resource_id          bigint(20) comment '资源id',
-    primary key(reserve_id, resource_group_id, resource_category_id)
+    primary key(id)
     );
-alter table yy_reserve_resource comment '预约核销资源';
+alter table yy_reserve_resource comment '预约资源';
 
