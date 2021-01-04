@@ -131,6 +131,25 @@ create table if not exists yy_patient
     );
 alter table yy_patient comment '患者';
 
+
+-- 患者自定义列
+drop table if exists yy_patient_col;
+create table if not exists yy_patient_col
+(
+    id          bigint(20) not null AUTO_INCREMENT comment 'id',
+    patient_id  bigint(20) not null comment '患者id',
+    dept_id     bigint(20) not null comment '医院id',
+    col1        varchar(255) comment '自定义列 1',
+    col2        varchar(255) comment '自定义列 2',
+    col3        varchar(255) comment '自定义列 3',
+    col4        varchar(255) comment '自定义列 4',
+    col5        varchar(255) comment '自定义列 5',
+    status      varchar(50) comment '状态',
+    remark      varchar(255) comment '备注',
+    primary key(id)
+    );
+alter table yy_patient_col comment '患者自定义列';
+
 -- 患者套餐
 drop table if exists yy_patient_term;
 create table if not exists yy_patient_term
