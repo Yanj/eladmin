@@ -1,12 +1,15 @@
 package me.zhengjie.modules.yy.service.impl;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import me.zhengjie.modules.security.service.dto.JwtUserDto;
 import me.zhengjie.modules.system.domain.Dept;
 import me.zhengjie.modules.system.repository.DeptRepository;
 import me.zhengjie.modules.system.service.dto.DeptSmallDto;
 import me.zhengjie.modules.yy.domain.Hospital;
+import me.zhengjie.modules.yy.domain.ResourceReserveCount;
 import me.zhengjie.modules.yy.repository.HospitalRepository;
+import me.zhengjie.modules.yy.repository.ResourceReserveCountRepository;
 import me.zhengjie.modules.yy.service.HospitalService;
 import me.zhengjie.modules.yy.service.dto.HospitalCriteria;
 import me.zhengjie.modules.yy.service.dto.HospitalDto;
@@ -29,6 +32,7 @@ import java.util.Map;
  * @author yanjun
  * @date 2020-12-24 21:23
  */
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class HospitalServiceImpl implements HospitalService {
@@ -38,8 +42,14 @@ public class HospitalServiceImpl implements HospitalService {
 
     private final DeptRepository deptRepository;
 
+    private final ResourceReserveCountRepository resourceReserveCountRepository;
+
     @Override
     public Map<String, Object> queryAll(HospitalCriteria criteria, Pageable pageable) {
+        List<ResourceReserveCount> list = resourceReserveCountRepository.findAll();
+        log.info("list size:" + list.size());
+        list = resourceReserveCountRepository.findAllByPkDeptIdAndPkDate(32L, "2021-01-04");
+        log.info("list size:" + list.size());
         Page<Hospital> page = repository.findAll((root, criteriaQuery, criteriaBuilder) -> QueryHelp.getPredicate(root, criteria, criteriaBuilder),
                 pageable);
         return PageUtil.toPage(page.map(mapper::toDto));

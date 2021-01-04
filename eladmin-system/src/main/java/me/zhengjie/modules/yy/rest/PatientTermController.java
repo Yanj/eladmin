@@ -47,6 +47,15 @@ public class PatientTermController {
 
     @Log("查询患者套餐")
     @ApiOperation("查询患者套餐")
+    @GetMapping("/list")
+    @AnonymousAccess
+    public ResponseEntity<Object> query(PatientTermCriteria criteria) {
+        return new ResponseEntity<>(patientTermService.queryAll(criteria), HttpStatus.OK);
+    }
+
+
+    @Log("查询患者套餐")
+    @ApiOperation("查询患者套餐")
     @GetMapping
     @AnonymousAccess
     public ResponseEntity<Object> query(PatientTermCriteria criteria, Pageable pageable) {

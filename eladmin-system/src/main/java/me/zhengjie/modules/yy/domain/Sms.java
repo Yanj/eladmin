@@ -2,8 +2,13 @@ package me.zhengjie.modules.yy.domain;
 
 import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.core.bean.copier.CopyOptions;
+import io.swagger.annotations.ApiModelProperty;
 import lombok.Getter;
 import lombok.Setter;
+import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.UpdateTimestamp;
+import org.springframework.data.annotation.CreatedBy;
+import org.springframework.data.annotation.LastModifiedBy;
 
 import javax.persistence.*;
 import java.io.Serializable;
@@ -42,16 +47,24 @@ public class Sms implements Serializable {
     @Column(name = "send_time")
     private Timestamp sendTime;
 
-    @Column(name = "create_by")
+    @CreatedBy
+    @Column(name = "create_by", updatable = false)
+    @ApiModelProperty(value = "创建人", hidden = true)
     private String createBy;
 
+    @LastModifiedBy
     @Column(name = "update_by")
-    private String updateBy;
+    @ApiModelProperty(value = "更新人", hidden = true)
+    private String updatedBy;
 
-    @Column(name = "create_time")
+    @CreationTimestamp
+    @Column(name = "create_time", updatable = false)
+    @ApiModelProperty(value = "创建时间", hidden = true)
     private Timestamp createTime;
 
+    @UpdateTimestamp
     @Column(name = "update_time")
+    @ApiModelProperty(value = "更新时间", hidden = true)
     private Timestamp updateTime;
 
     public void copy(Sms source) {
