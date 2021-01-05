@@ -11,6 +11,33 @@ import javax.persistence.EmbeddedId;
 import javax.persistence.Entity;
 import java.io.Serializable;
 
+/*
+
+        select
+          t1.*,
+          t1.count-t1.used_count as left_count
+        from (
+          select
+            t.dept_id,
+            t.date,
+            t.work_time_id,
+            t.resource_category_id,
+            t.count,
+            count(t.resource_category_id) as used_count
+          from (
+            select
+              r.dept_id,
+              r.date,
+              r.work_time_id,
+              rr.resource_category_id,
+              rc.count
+            from yy_reserve_resource rr
+            left join yy_reserve r on rr.reserve_id = r.id
+            left join yy_resource_category rc on rr.resource_category_id =  rc.id
+          ) t
+          group by t.dept_id, t.date, t.work_time_id, t.resource_category_id
+        ) t1
+ */
 /**
  * 根据 医院/日期/时段 统计资源使用情况
  */

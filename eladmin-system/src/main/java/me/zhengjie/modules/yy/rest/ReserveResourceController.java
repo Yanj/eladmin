@@ -37,6 +37,14 @@ public class ReserveResourceController {
         reserveResourceService.download(reserveResourceService.queryAll(criteria), response);
     }
 
+    @Log("查询预约资源统计")
+    @ApiOperation("查询预约资源统计")
+    @GetMapping("/reserveCount")
+    @AnonymousAccess
+    public ResponseEntity<Object> reserveCount(@RequestParam("deptId") Long deptId) {
+        return new ResponseEntity<>(reserveResourceService.queryReserveCount(deptId), HttpStatus.OK);
+    }
+
     @Log("查询预约资源")
     @ApiOperation("查询预约资源")
     @GetMapping

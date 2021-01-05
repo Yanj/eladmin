@@ -72,4 +72,11 @@ public interface ReserveResourceService {
      */
     void download(List<ReserveResourceDto> all, HttpServletResponse response) throws IOException;
 
+    /**
+     * 查询预约资源统计
+     *
+     * @param deptId .
+     * @return .
+     */
+    List<Map<String, Object>> queryReserveCount(Long deptId);
 }

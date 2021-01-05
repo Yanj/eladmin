@@ -110,6 +110,8 @@ public class PatientServiceImpl implements PatientService {
             Patient patient = repository.findByCode(code);
             if (null == patient) {
                 repository.save(patientMap.get(code));
+            } else {
+                patientMap.put(code, patient);
             }
         }
 
@@ -154,7 +156,12 @@ public class PatientServiceImpl implements PatientService {
             }
         }
 
-        return noExistMap;
+        Map<String, Object> res = new HashMap<>();
+        res.put("notExists", noExistMap);
+        if (!patientMap.isEmpty()) {
+            res.put("patient", mapper.toDto(patientMap.values().iterator().next()));
+        }
+        return res;
     }
 
     @Override

@@ -42,14 +42,8 @@ public class HospitalServiceImpl implements HospitalService {
 
     private final DeptRepository deptRepository;
 
-    private final ResourceReserveCountRepository resourceReserveCountRepository;
-
     @Override
     public Map<String, Object> queryAll(HospitalCriteria criteria, Pageable pageable) {
-        List<ResourceReserveCount> list = resourceReserveCountRepository.findAll();
-        log.info("list size:" + list.size());
-        list = resourceReserveCountRepository.findAllByPkDeptIdAndPkDate(32L, "2021-01-04");
-        log.info("list size:" + list.size());
         Page<Hospital> page = repository.findAll((root, criteriaQuery, criteriaBuilder) -> QueryHelp.getPredicate(root, criteria, criteriaBuilder),
                 pageable);
         return PageUtil.toPage(page.map(mapper::toDto));
