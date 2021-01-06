@@ -113,10 +113,11 @@ public class ReserveResourceServiceImpl implements ReserveResourceService {
                 item.put("workTime", workTime);
 
                 Map<String, Object> usedMap = new HashMap<>();
-                item.put("usedMap", usedMap);
 
                 Map<String, Object> countMap = new HashMap<>();
-                item.put("countMap", countMap);
+
+                Map<String, Object> leftMap = new HashMap<>();
+
 
                 // 遍历资源组
                 for (ResourceGroupCount resourceGroupCount : resourceGroupCountList) {
@@ -135,20 +136,24 @@ public class ReserveResourceServiceImpl implements ReserveResourceService {
                             break;
                         }
                     }
-                    int left = resourceGroupCount.getCount();
+                    int usedCount = 0;
+                    if (null != useCount && null != useCount.getCount()) {
+                        usedCount = useCount.getCount();
+                    }
+                    usedMap.put(resourceGroupCount.getId().toString(), usedCount);
 
                     int count = 0;
-                    if (null != useCount && null != useCount.getCount()) {
-                        count = useCount.getCount();
-                    }
-                    usedMap.put(resourceGroupCount.getId().toString(), count);
-
-                    count = 0;
                     if (null != resourceGroupCount.getCount()) {
                         count = resourceGroupCount.getCount();
                     }
-                    usedMap.put(resourceGroupCount.getId().toString(), count);
+                    countMap.put(resourceGroupCount.getId().toString(), count);
+
+                    leftMap.put(resourceGroupCount.getId().toString(), count - usedCount);
                 }
+
+                item.put("usedMap", usedMap);
+                item.put("countMap", countMap);
+                item.put("leftMap", leftMap);
 
                 list.add(item);
             }
