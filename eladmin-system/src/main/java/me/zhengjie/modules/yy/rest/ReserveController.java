@@ -92,6 +92,14 @@ public class ReserveController {
         return new ResponseEntity<>(reserveService.create(resources), HttpStatus.CREATED);
     }
 
+    @Log("新增预约")
+    @ApiOperation("新增预约")
+    @PostMapping("/list")
+    @AnonymousAccess
+    public ResponseEntity<Object> create(@Validated @RequestBody Reserve[] resources) {
+        return new ResponseEntity<>(reserveService.create(resources), HttpStatus.CREATED);
+    }
+
     @Log("修改预约")
     @ApiOperation("修改预约")
     @PutMapping

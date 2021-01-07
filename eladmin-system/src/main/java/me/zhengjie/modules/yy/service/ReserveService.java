@@ -66,6 +66,14 @@ public interface ReserveService {
     ReserveDto create(Reserve resources);
 
     /**
+     * 创建
+     *
+     * @param resources /
+     * @return ReserveDto
+     */
+    List<ReserveDto> create(Reserve[] resources);
+
+    /**
      * 核销
      *
      * @param resources /

@@ -221,6 +221,7 @@ public class ReserveServiceImpl implements ReserveService {
         if (null == patient.getId()) {
             throw new RuntimeException("患者不存在");
         }
+        resources.setPatient(patient);
 
         // 获取套餐
         String code = patientTerm.getTermCode();
@@ -312,6 +313,16 @@ public class ReserveServiceImpl implements ReserveService {
         patientTermLogRepository.save(patientTermLog);
 
         return mapper.toDto(reserve);
+    }
+
+    @Transactional(rollbackFor = Exception.class)
+    @Override
+    public List<ReserveDto> create(Reserve[] resources) {
+        List<ReserveDto> res = new ArrayList<>();
+        for (Reserve reserve : resources) {
+            res.add(create(reserve));
+        }
+        return res;
     }
 
     @Transactional
