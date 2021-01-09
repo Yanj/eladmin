@@ -1,5 +1,6 @@
 package me.zhengjie.modules.yy.service;
 
+import me.zhengjie.modules.system.service.dto.DeptDto;
 import me.zhengjie.modules.yy.domain.Hospital;
 import me.zhengjie.modules.yy.service.dto.HospitalCriteria;
 import me.zhengjie.modules.yy.service.dto.HospitalDto;
@@ -15,6 +16,13 @@ import java.util.Map;
  * @date 2020-12-24 21:22
  */
 public interface HospitalService {
+
+    /**
+     * 查询所有医院
+     *
+     * @return .
+     */
+    List<DeptDto> queryAll();
 
     /**
      * 查询数据分页

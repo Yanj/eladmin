@@ -3,12 +3,18 @@ package me.zhengjie.modules.yy.service.impl;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import me.zhengjie.domain.vo.HisCkItemVo;
+import me.zhengjie.modules.system.domain.Dept;
+import me.zhengjie.modules.system.repository.DeptRepository;
+import me.zhengjie.modules.system.service.mapstruct.DeptMapper;
 import me.zhengjie.modules.yy.domain.Patient;
+import me.zhengjie.modules.yy.domain.PatientCol;
 import me.zhengjie.modules.yy.domain.PatientTerm;
 import me.zhengjie.modules.yy.domain.Term;
 import me.zhengjie.modules.yy.repository.PatientRepository;
 import me.zhengjie.modules.yy.repository.PatientTermRepository;
 import me.zhengjie.modules.yy.repository.TermRepository;
+import me.zhengjie.modules.yy.service.HospitalService;
+import me.zhengjie.modules.yy.service.PatientColService;
 import me.zhengjie.modules.yy.service.PatientService;
 import me.zhengjie.modules.yy.service.dto.PatientCriteria;
 import me.zhengjie.modules.yy.service.dto.PatientDto;
@@ -39,6 +45,11 @@ public class PatientServiceImpl implements PatientService {
 
     private final TermRepository termRepository;
     private final PatientTermRepository patientTermRepository;
+
+    private final HospitalService hospitalService;
+    private final DeptMapper deptMapper;
+
+    private final PatientColService patientColService;
 
     private final HisService hisService;
 
@@ -109,11 +120,13 @@ public class PatientServiceImpl implements PatientService {
         for (String code : patientMap.keySet()) {
             Patient patient = repository.findByCode(code);
             if (null == patient) {
-                repository.save(patientMap.get(code));
-            } else {
-                patientMap.put(code, patient);
+                patient = repository.save(patientMap.get(code));
             }
+            patientMap.put(code, patient);
         }
+
+        // 同步患者附加数据
+        patientColService.syncData();
 
         // 同步患者套餐信息
         // ... 过滤数据

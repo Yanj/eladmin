@@ -121,11 +121,11 @@ file:
   maxSize: 100
   avatarMaxSize: 5
 
-# his 配置
+# his 配置 http://192.180.150.159:8080/Web_kbj.asmx
 his:
   server:
     protocol: http
-    host: 171.221.244.91
+    host: 192.180.150.159
     port: 8080
     path: Web_kbj.asmx
     opName: GetCkItem

@@ -1,8 +1,10 @@
 package me.zhengjie.modules.yy.service.impl;
 
 import lombok.RequiredArgsConstructor;
+import me.zhengjie.modules.system.service.dto.DeptDto;
 import me.zhengjie.modules.yy.domain.PatientCol;
 import me.zhengjie.modules.yy.repository.PatientColRepository;
+import me.zhengjie.modules.yy.service.HospitalService;
 import me.zhengjie.modules.yy.service.PatientColService;
 import me.zhengjie.modules.yy.service.dto.PatientColCriteria;
 import me.zhengjie.modules.yy.service.dto.PatientColDto;
@@ -33,6 +35,17 @@ public class PatientColServiceImpl implements PatientColService {
 
     private final PatientColRepository repository;
     private final PatientColMapper mapper;
+
+    private final HospitalService hospitalService;
+
+    @Transactional(rollbackFor = Exception.class)
+    @Override
+    public void syncData() {
+        List<DeptDto> list = hospitalService.queryAll();
+        for (DeptDto dept : list) {
+            repository.insertByDeptId(dept.getId());
+        }
+    }
 
     @Override
     public Map<String, Object> queryAll(PatientColCriteria criteria, Pageable pageable) {
@@ -72,7 +85,8 @@ public class PatientColServiceImpl implements PatientColService {
     @Override
     public void deleteAll(Long[] ids) {
         for (Long id : ids) {
-            repository.deleteById(id);
+            // 更新状态
+            repository.updateStatus(id, "0");
         }
     }
 

@@ -5,7 +5,9 @@ import lombok.extern.slf4j.Slf4j;
 import me.zhengjie.modules.security.service.dto.JwtUserDto;
 import me.zhengjie.modules.system.domain.Dept;
 import me.zhengjie.modules.system.repository.DeptRepository;
+import me.zhengjie.modules.system.service.dto.DeptDto;
 import me.zhengjie.modules.system.service.dto.DeptSmallDto;
+import me.zhengjie.modules.system.service.mapstruct.DeptMapper;
 import me.zhengjie.modules.yy.domain.Hospital;
 import me.zhengjie.modules.yy.domain.ResourceReserveCount;
 import me.zhengjie.modules.yy.repository.HospitalRepository;
@@ -41,6 +43,14 @@ public class HospitalServiceImpl implements HospitalService {
     private final HospitalMapper mapper;
 
     private final DeptRepository deptRepository;
+    private final DeptMapper deptMapper;
+
+    @Override
+    public List<DeptDto> queryAll() {
+        Long pid = getPid();
+        List<Dept> list = deptRepository.findByPid(pid);
+        return deptMapper.toDto(list);
+    }
 
     @Override
     public Map<String, Object> queryAll(HospitalCriteria criteria, Pageable pageable) {

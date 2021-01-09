@@ -7,6 +7,7 @@ import lombok.Setter;
 
 import javax.persistence.*;
 import java.io.Serializable;
+import java.util.Set;
 
 /**
  * @author yanjun
@@ -33,6 +34,10 @@ public class Patient implements Serializable {
     private String status;
 
     private String remark;
+
+    @OneToMany
+    @JoinColumn(name = "patient_id")
+    private Set<PatientCol> cols;
 
     public void copy(Patient source) {
         BeanUtil.copyProperties(source, this, CopyOptions.create().setIgnoreNullValue(true));

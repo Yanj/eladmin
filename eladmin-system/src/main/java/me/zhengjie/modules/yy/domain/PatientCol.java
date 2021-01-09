@@ -2,6 +2,7 @@ package me.zhengjie.modules.yy.domain;
 
 import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.core.bean.copier.CopyOptions;
+import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.Setter;
 import me.zhengjie.modules.system.domain.Dept;
