@@ -7,7 +7,10 @@ import me.zhengjie.modules.yy.domain.*;
 import me.zhengjie.modules.yy.repository.*;
 import me.zhengjie.modules.yy.service.ReserveService;
 import me.zhengjie.modules.yy.service.dto.*;
-import me.zhengjie.modules.yy.service.mapstruct.*;
+import me.zhengjie.modules.yy.service.mapstruct.ReserveMapper;
+import me.zhengjie.modules.yy.service.mapstruct.ResourceSmallMapper;
+import me.zhengjie.modules.yy.service.mapstruct.TermSmallMapper;
+import me.zhengjie.modules.yy.service.mapstruct.WorkTimeSmallMapper;
 import me.zhengjie.modules.yy.util.TimeUtil;
 import me.zhengjie.service.SmsChannelService;
 import me.zhengjie.utils.FileUtil;
@@ -55,6 +58,18 @@ public class ReserveServiceImpl implements ReserveService {
     private final TermSmallMapper termSmallMapper;
 
     private final SmsChannelService smsChannelService;
+
+    @Transactional(rollbackFor = Exception.class)
+    @Override
+    public void automaticCancel() {
+        String date = TimeUtil.getCurrentDate();
+        List<Reserve> list = repository.findByStatusAndDateLessThan("init", date);
+        if (null != list && !list.isEmpty()) {
+            for (Reserve reserve : list) {
+                cancel(reserve);
+            }
+        }
+    }
 
     @Override
     public Map<String, Object> queryAll(ReserveCriteria criteria, Pageable pageable) {

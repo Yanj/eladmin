@@ -17,6 +17,15 @@ import java.util.Map;
 public interface ReserveRepository extends JpaRepository<Reserve, Long>, JpaSpecificationExecutor<Reserve> {
 
     /**
+     * 根据状态和日期查询
+     *
+     * @param status
+     * @param date
+     * @return
+     */
+    List<Reserve> findByStatusAndDateLessThan(String status, String date);
+
+    /**
      * 锁行更新
      */
     @Lock(value = LockModeType.PESSIMISTIC_WRITE)

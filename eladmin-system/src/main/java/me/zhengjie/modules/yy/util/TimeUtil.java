@@ -11,6 +11,34 @@ import java.util.Date;
  */
 public class TimeUtil {
 
+    /**
+     * 获取当前日期
+     *
+     * @return .
+     */
+    public static String getCurrentDate() {
+        return getCurrentDate(0);
+    }
+
+    /**
+     * 获取当前日期
+     *
+     * @param offset .
+     * @return .
+     */
+    public static String getCurrentDate(int offset) {
+        Calendar cal = Calendar.getInstance();
+        cal.add(Calendar.DAY_OF_YEAR, offset);
+        SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd");
+        return format.format(cal.getTime());
+    }
+
+    /**
+     * 获取日期的星期文本
+     *
+     * @param date .
+     * @return .
+     */
     public static String getWeekDayText(String date) {
         Calendar cal = Calendar.getInstance();
         try {

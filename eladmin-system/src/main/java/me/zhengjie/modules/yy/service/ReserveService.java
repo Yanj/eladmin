@@ -17,6 +17,11 @@ import java.util.Map;
 public interface ReserveService {
 
     /**
+     * 自动取消
+     */
+    void automaticCancel();
+
+    /**
      * 查询数据分页
      *
      * @param criteria 条件
