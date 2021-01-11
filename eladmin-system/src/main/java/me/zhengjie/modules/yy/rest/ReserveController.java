@@ -88,7 +88,7 @@ public class ReserveController {
     @ApiOperation("新增预约")
     @PostMapping
     @AnonymousAccess
-    public ResponseEntity<Object> create(@Validated @RequestBody Reserve resources) {
+    public ResponseEntity<Object> create(@Validated @RequestBody Reserve resources) throws Exception {
         return new ResponseEntity<>(reserveService.create(resources), HttpStatus.CREATED);
     }
 
@@ -96,7 +96,7 @@ public class ReserveController {
     @ApiOperation("新增预约")
     @PostMapping("/list")
     @AnonymousAccess
-    public ResponseEntity<Object> create(@Validated @RequestBody Reserve[] resources) {
+    public ResponseEntity<Object> create(@Validated @RequestBody Reserve[] resources) throws Exception {
         return new ResponseEntity<>(reserveService.create(resources), HttpStatus.CREATED);
     }
 

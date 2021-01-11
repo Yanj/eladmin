@@ -63,7 +63,7 @@ public interface ReserveService {
      * @param resources /
      * @return ReserveDto
      */
-    ReserveDto create(Reserve resources);
+    ReserveDto create(Reserve resources) throws Exception;
 
     /**
      * 创建
@@ -71,7 +71,7 @@ public interface ReserveService {
      * @param resources /
      * @return ReserveDto
      */
-    List<ReserveDto> create(Reserve[] resources);
+    List<ReserveDto> create(Reserve[] resources) throws Exception;
 
     /**
      * 核销

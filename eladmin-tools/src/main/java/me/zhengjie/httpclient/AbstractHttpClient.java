@@ -7,6 +7,7 @@ import org.apache.http.HttpResponse;
 import org.apache.http.client.ResponseHandler;
 import org.apache.http.client.config.RequestConfig;
 import org.apache.http.client.methods.HttpGet;
+import org.apache.http.client.methods.HttpPost;
 import org.apache.http.client.methods.HttpUriRequest;
 import org.apache.http.conn.ssl.SSLConnectionSocketFactory;
 import org.apache.http.impl.client.CloseableHttpClient;
@@ -39,6 +40,18 @@ public abstract class AbstractHttpClient implements InitializingBean {
         System.out.println("uri:" + uri);
         HttpGet get = new HttpGet(uri);
         return execute(get, responseHandler);
+    }
+
+    public <T> T doPost(String uri, ResponseHandler<? extends T> responseHandler) throws Exception {
+        return doPost(uri, null, responseHandler);
+    }
+
+    public <T> T doPost(String uri, HttpEntity entity, ResponseHandler<? extends T> responseHandler) throws Exception {
+        HttpPost post = new HttpPost(uri);
+        if (null != entity) {
+            post.setEntity(entity);
+        }
+        return execute(post, responseHandler);
     }
 
     public <T> T execute(HttpUriRequest request, ResponseHandler<? extends T> responseHandler) throws Exception {

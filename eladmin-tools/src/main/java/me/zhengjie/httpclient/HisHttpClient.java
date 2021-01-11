@@ -1,5 +1,6 @@
 package me.zhengjie.httpclient;
 
+import me.zhengjie.config.HisConfig;
 import me.zhengjie.domain.vo.HisCkItemVo;
 import me.zhengjie.service.dto.HisCkItemDto;
 import me.zhengjie.utils.HisUtil;
@@ -22,7 +23,7 @@ public class HisHttpClient extends AbstractHttpClient {
 
     private ResponseHandler<List<HisCkItemDto>> hisCkItemListResponseHandler;
 
-    public HisHttpClient(HttpClientConfig config, ConnectionManager connectionManager) {
+    public HisHttpClient(HisConfig config, ConnectionManager connectionManager) {
         super(config, connectionManager);
     }
 

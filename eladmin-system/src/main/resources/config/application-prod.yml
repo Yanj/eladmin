@@ -129,3 +129,12 @@ his:
     port: 8080
     path: Web_kbj.asmx
     opName: GetCkItem
+
+# sms
+sms:
+  enable: false
+  chanel:
+    server: https://sdk2.028lk.com/sdk2/
+    opName: BatchSend2.aspx
+    corpId: CDJS002621
+    pwd: zm0513@

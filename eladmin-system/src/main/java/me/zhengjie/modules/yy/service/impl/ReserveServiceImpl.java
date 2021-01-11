@@ -2,11 +2,14 @@ package me.zhengjie.modules.yy.service.impl;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import me.zhengjie.domain.vo.SmsVo;
 import me.zhengjie.modules.yy.domain.*;
 import me.zhengjie.modules.yy.repository.*;
 import me.zhengjie.modules.yy.service.ReserveService;
 import me.zhengjie.modules.yy.service.dto.*;
 import me.zhengjie.modules.yy.service.mapstruct.*;
+import me.zhengjie.modules.yy.util.TimeUtil;
+import me.zhengjie.service.SmsChannelService;
 import me.zhengjie.utils.FileUtil;
 import me.zhengjie.utils.PageUtil;
 import me.zhengjie.utils.QueryHelp;
@@ -50,6 +53,8 @@ public class ReserveServiceImpl implements ReserveService {
     private final ResourceSmallMapper resourceSmallMapper;
     private final WorkTimeSmallMapper workTimeSmallMapper;
     private final TermSmallMapper termSmallMapper;
+
+    private final SmsChannelService smsChannelService;
 
     @Override
     public Map<String, Object> queryAll(ReserveCriteria criteria, Pageable pageable) {
@@ -187,7 +192,7 @@ public class ReserveServiceImpl implements ReserveService {
 
     @Transactional(rollbackFor = Exception.class)
     @Override
-    public ReserveDto create(Reserve resources) {
+    public ReserveDto create(Reserve resources) throws Exception {
         // 判断部门
         if (null == resources.getDept() || null == resources.getDept().getId()) {
             throw new RuntimeException("部门不能为空");
@@ -296,10 +301,18 @@ public class ReserveServiceImpl implements ReserveService {
             sms.setBusType("reserve");
             sms.setBusId(reserve.getId());
             sms.setMobile(patient.getPhone());
-            String content = String.format("您购买的套餐[%s], 已预约成功, 请于%s %s前到我院使用, 感谢您的信任, %s",
-                    patientTerm.getTermName(), resources.getDate(), resources.getBeginTime(), resources.getDept().getName());
+            String content = String.format(
+                    "尊敬的%s女士您好！您预约了%s %s-%s（%s）%s项目，如若因故未能按时到院就诊，请提前电话取消预约028-65311659， 感谢您的配合！ 地址：成都市青羊区包家巷77号.退订回T",
+                    patient.getName(),
+                    resources.getDate(), resources.getBeginTime(), resources.getEndTime(), TimeUtil.getWeekDayText(resources.getDate()),
+                    patientTerm.getTermName());
             sms.setContent(content);
-            sms.setStatus("init");
+
+            // 发送短信
+            SmsVo smsVo = new SmsVo(sms.getMobile(), sms.getContent());
+            String res = smsChannelService.sendSms(smsVo);
+            sms.setStatus(res);
+
             smsRepository.save(sms);
         }
 
@@ -317,7 +330,7 @@ public class ReserveServiceImpl implements ReserveService {
 
     @Transactional(rollbackFor = Exception.class)
     @Override
-    public List<ReserveDto> create(Reserve[] resources) {
+    public List<ReserveDto> create(Reserve[] resources) throws Exception {
         List<ReserveDto> res = new ArrayList<>();
         for (Reserve reserve : resources) {
             res.add(create(reserve));
@@ -393,18 +406,18 @@ public class ReserveServiceImpl implements ReserveService {
         reserve.setStatus("verified");
         repository.save(reserve);
 
-        // 发送短信
-        if (!StringUtils.isEmpty(patient.getPhone())) {
-            Sms sms = new Sms();
-            sms.setBusType("reserve");
-            sms.setBusId(reserve.getId());
-            sms.setMobile(patient.getPhone());
-            String content = String.format("您预约的套餐[%s], 预约时间 %s %s, 已使用成功, 感谢您的信任, %s",
-                    patientTerm.getTermName(), reserve.getDate(), reserve.getBeginTime(), reserve.getDept().getName());
-            sms.setContent(content);
-            sms.setStatus("init");
-            smsRepository.save(sms);
-        }
+//        // 发送短信
+//        if (!StringUtils.isEmpty(patient.getPhone())) {
+//            Sms sms = new Sms();
+//            sms.setBusType("reserve");
+//            sms.setBusId(reserve.getId());
+//            sms.setMobile(patient.getPhone());
+//            String content = String.format("您预约的套餐[%s], 预约时间 %s %s, 已使用成功, 感谢您的信任, %s",
+//                    patientTerm.getTermName(), reserve.getDate(), reserve.getBeginTime(), reserve.getDept().getName());
+//            sms.setContent(content);
+//            sms.setStatus("init");
+//            smsRepository.save(sms);
+//        }
 
         // 新增日志
         ReserveLog reserveLog = new ReserveLog();
@@ -469,18 +482,18 @@ public class ReserveServiceImpl implements ReserveService {
         // 删除资源
         reserveResourceRepository.deleteByReserveId(reserve.getId());
 
-        // 发送短信
-        if (!StringUtils.isEmpty(patient.getPhone())) {
-            Sms sms = new Sms();
-            sms.setBusType("reserve");
-            sms.setBusId(reserve.getId());
-            sms.setMobile(patient.getPhone());
-            String content = String.format("您预约的套餐[%s], 预约时间%s %s, 已签到成功, %s",
-                    patientTerm.getTermName(), reserve.getDate(), reserve.getBeginTime(), reserve.getDept().getName());
-            sms.setContent(content);
-            sms.setStatus("init");
-            smsRepository.save(sms);
-        }
+//        // 发送短信
+//        if (!StringUtils.isEmpty(patient.getPhone())) {
+//            Sms sms = new Sms();
+//            sms.setBusType("reserve");
+//            sms.setBusId(reserve.getId());
+//            sms.setMobile(patient.getPhone());
+//            String content = String.format("您预约的套餐[%s], 预约时间%s %s, 已签到成功, %s",
+//                    patientTerm.getTermName(), reserve.getDate(), reserve.getBeginTime(), reserve.getDept().getName());
+//            sms.setContent(content);
+//            sms.setStatus("init");
+//            smsRepository.save(sms);
+//        }
 
         // 新增日志
         ReserveLog reserveLog = new ReserveLog();
@@ -537,18 +550,18 @@ public class ReserveServiceImpl implements ReserveService {
         reserve.setStatus("check_in");
         repository.save(reserve);
 
-        // 发送短信
-        if (!StringUtils.isEmpty(patient.getPhone())) {
-            Sms sms = new Sms();
-            sms.setBusType("reserve");
-            sms.setBusId(reserve.getId());
-            sms.setMobile(patient.getPhone());
-            String content = String.format("您预约的套餐[%s], 预约时间%s %s, 已签到成功, %s",
-                    patientTerm.getTermName(), reserve.getDate(), reserve.getBeginTime(), reserve.getDept().getName());
-            sms.setContent(content);
-            sms.setStatus("init");
-            smsRepository.save(sms);
-        }
+//        // 发送短信
+//        if (!StringUtils.isEmpty(patient.getPhone())) {
+//            Sms sms = new Sms();
+//            sms.setBusType("reserve");
+//            sms.setBusId(reserve.getId());
+//            sms.setMobile(patient.getPhone());
+//            String content = String.format("您预约的套餐[%s], 预约时间%s %s, 已签到成功, %s",
+//                    patientTerm.getTermName(), reserve.getDate(), reserve.getBeginTime(), reserve.getDept().getName());
+//            sms.setContent(content);
+//            sms.setStatus("init");
+//            smsRepository.save(sms);
+//        }
 
         // 新增日志
         ReserveLog reserveLog = new ReserveLog();
