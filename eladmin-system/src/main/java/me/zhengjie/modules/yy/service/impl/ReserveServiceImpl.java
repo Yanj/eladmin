@@ -696,8 +696,10 @@ public class ReserveServiceImpl implements ReserveService {
 
 
     @Override
-    public List<Long> queryTodayCountGroupByWorkTime(Long deptId) {
-        List<Long> resList = new ArrayList<>();
+    public TodayWorkTimeReserveCountDto queryTodayCountGroupByWorkTime(Long deptId) {
+        TodayWorkTimeReserveCountDto todayWorkTimeReserveCount = new TodayWorkTimeReserveCountDto();
+        List<String> workTimes = new ArrayList<>();
+        List<Long> counts = new ArrayList<>();
 
         // 查询今日预约数量统计
         String date = TimeUtil.getCurrentDate();
@@ -715,10 +717,14 @@ public class ReserveServiceImpl implements ReserveService {
                     break;
                 }
             }
-            resList.add(count);
+            workTimes.add(workTime.getBeginTime());
+            counts.add(count);
         }
 
-        return resList;
+        todayWorkTimeReserveCount.setCounts(counts);
+        todayWorkTimeReserveCount.setWorkTimes(workTimes);
+
+        return todayWorkTimeReserveCount;
     }
 
     @Override

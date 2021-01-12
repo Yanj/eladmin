@@ -54,6 +54,14 @@ public class ReserveController {
         return new ResponseEntity<>(reserveService.queryWeekCount(deptId), HttpStatus.OK);
     }
 
+    @Log("查询今日工作时段预约统计")
+    @ApiOperation("查询今日工作时段预约统计")
+    @GetMapping("/workTimeCount")
+    @AnonymousAccess
+    public ResponseEntity<Object> queryWorkTimeCount(@RequestParam("deptId") Long deptId) {
+        return new ResponseEntity<>(reserveService.queryTodayCountGroupByWorkTime(deptId), HttpStatus.OK);
+    }
+
     @Log("查询预约")
     @ApiOperation("查询预约")
     @GetMapping

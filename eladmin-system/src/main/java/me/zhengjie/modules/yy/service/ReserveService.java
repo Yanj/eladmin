@@ -140,7 +140,7 @@ public interface ReserveService {
      *
      * @return .
      */
-    List<Long> queryTodayCountGroupByWorkTime(Long deptId);
+    TodayWorkTimeReserveCountDto queryTodayCountGroupByWorkTime(Long deptId);
 
     /**
      * 查询今日资源统计, 按时段汇总

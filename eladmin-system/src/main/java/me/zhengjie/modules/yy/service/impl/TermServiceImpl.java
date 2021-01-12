@@ -56,6 +56,9 @@ public class TermServiceImpl implements TermService {
     @Transactional(rollbackFor = Exception.class)
     @Override
     public TermDto create(Term resources) {
+//        // 金额处理
+//        resources.setPrice(resources.getPrice() * 100);
+//        resources.setOriginalPrice(resources.getOriginalPrice() * 100);
         return mapper.toDto(repository.save(resources));
     }
 
@@ -65,6 +68,9 @@ public class TermServiceImpl implements TermService {
         Term instance = repository.findById(resources.getId()).orElseGet(Term::new);
         ValidationUtil.isNull(instance.getId(), "Term", "id", resources.getId());
         instance.copy(resources);
+//        // 金额处理
+//        instance.setPrice(resources.getPrice() * 100);
+//        instance.setOriginalPrice(resources.getOriginalPrice() * 100);
         repository.save(instance);
     }
 
