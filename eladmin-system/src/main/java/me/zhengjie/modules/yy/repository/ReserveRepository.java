@@ -17,6 +17,120 @@ import java.util.Map;
 public interface ReserveRepository extends JpaRepository<Reserve, Long>, JpaSpecificationExecutor<Reserve> {
 
     /**
+     * 查询某日各时段资源占用数量
+     *
+     * @param date .
+     * @return .
+     */
+    /*
+select r.work_time_id as work_time_id, r.resource_group_id as resource_group_id, count(1) as count from yy_reserve r
+where r.dept_id = ?1 and r.date = ?2 r.status != 'canceled'
+group by r.work_time_id, r.resource_group_id
+     */
+    @Query(
+            value = "" +
+                    "select r.work_time_id as work_time_id, r.resource_group_id as resource_group_id, count(1) as count from yy_reserve r " +
+                    "where r.dept_id = ?1 and r.date = ?2 and r.status != 'canceled' " +
+                    "group by r.work_time_id, r.resource_group_id " +
+                    "",
+            nativeQuery = true
+    )
+    List<Map<String, Object>> queryCountGroupByWorkTimeAndResourceGroup(Long deptId, String date);
+
+    /**
+     * 查询某日的时段预约总数
+     * @param date
+     * @return
+     */
+    /*
+select r.work_time_id as work_time_id, count(1) as count from yy_reserve r
+where r.dept_id = ?1 and r.date = ?2 and r.status != 'canceled'
+group by r.work_time_id
+     */
+    @Query(
+            value = "" +
+                    "select r.work_time_id as work_time_id, count(1) as count from yy_reserve r " +
+                    "where r.dept_id = ?1 and r.date = ?2 and r.status != 'canceled' " +
+                    "group by r.work_time_id " +
+                    "",
+            nativeQuery = true
+    )
+    List<Map<String, Object>> queryCountGroupByWorkTimeId(Long deptId, String date);
+
+    /**
+     * 日期范围内根据状态统计
+     *
+     * @param beginDate .
+     * @param endDate .
+     * @param status .
+     * @return .
+     */
+    /*
+select r.date as date,count(1) as count from yy_reserve r
+where r.dept_id = ?1 and r.date >= ?2 and r.date < ?3 and r.status = ?4
+group by r.date
+     */
+    @Query(
+            value = "" +
+                    "select r.date as date, count(1) as count from yy_reserve r " +
+                    "where r.dept_id = ?1 and r.date >= ?2 and r.date < ?3 and r.status = ?4 " +
+                    "group by r.date ",
+            nativeQuery = true
+    )
+    List<Map<String, Object>> queryRangeCountByStatusEquals(Long deptId, String beginDate, String endDate, String status);
+
+    /**
+     * 日期范围内根据状态统计
+     *
+     * @param beginDate .
+     * @param endDate .
+     * @param status .
+     * @return .
+     */
+    /*
+select r.date as date,count(1) as count from yy_reserve r
+where r.dept_id = ?1 and r.date >= ?2 and r.date < ?3 and r.status != 'canceled'
+group by r.date
+     */
+    @Query(
+            value = "" +
+                    "select r.date as date, count(1) as count from yy_reserve r " +
+                    "where r.dept_id = ?1 and r.date >= ?2 and r.date < ?3 and r.status != ?4 " +
+                    "group by r.date ",
+            nativeQuery = true
+    )
+    List<Map<String, Object>> queryRangeCountByStatusNotEquals(Long deptId, String beginDate, String endDate, String status);
+
+    /**
+     * 统计今日预约数据
+     *
+     * @param date .
+     * @return .
+     */
+    /*
+select 'all' as status, count(1) as count from yy_reserve r where r.date =  ?1 and r.status != ''
+union
+select 'init' as status, count(1) as count from yy_reserve r where r.date = ?1 and r.status = 'init'
+union
+select 'check_in' as status, count(1) as count from yy_reserve r where r.date = ?1 and r.status = 'check_in'
+union
+select 'verified' as status, count(1) as count from yy_reserve r where r.date = ?1 and r.status = 'verified'
+     */
+    @Query(
+            value = "" +
+                    "select 'all' as status, count(1) as count from yy_reserve r where r.dept_id = ?1 and r.date =  ?2 and r.status != 'canceled' " +
+                    "union " +
+                    "select 'init' as status, count(1) as count from yy_reserve r where r.dept_id = ?1 and r.date = ?2 and r.status = 'init' " +
+                    "union " +
+                    "select 'check_in' as status, count(1) as count from yy_reserve r where r.dept_id = ?1 and r.date = ?2 and r.status = 'check_in' " +
+                    "union " +
+                    "select 'verified' as status, count(1) as count from yy_reserve r where r.dept_id = ?1 and r.date = ?2 and r.status = 'verified'" +
+            "",
+            nativeQuery = true
+    )
+    List<Map<String, Object>> queryTodayCount(Long deptId, String date);
+
+    /**
      * 根据状态和日期查询
      *
      * @param status

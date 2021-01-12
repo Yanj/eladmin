@@ -38,6 +38,22 @@ public class ReserveController {
         reserveService.download(reserveService.queryAll(criteria), response);
     }
 
+    @Log("查询今日预约统计")
+    @ApiOperation("查询今日预约统计")
+    @GetMapping("/todayCount")
+    @AnonymousAccess
+    public ResponseEntity<Object> queryTodayCount(@RequestParam("deptId") Long deptId) {
+        return new ResponseEntity<>(reserveService.queryTodayCount(deptId), HttpStatus.OK);
+    }
+
+    @Log("查询周预约统计")
+    @ApiOperation("查询周预约统计")
+    @GetMapping("/weekCount")
+    @AnonymousAccess
+    public ResponseEntity<Object> queryWeekCount(@RequestParam("deptId") Long deptId) {
+        return new ResponseEntity<>(reserveService.queryWeekCount(deptId), HttpStatus.OK);
+    }
+
     @Log("查询预约")
     @ApiOperation("查询预约")
     @GetMapping

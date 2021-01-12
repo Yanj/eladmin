@@ -1,7 +1,6 @@
 package me.zhengjie.modules.yy.service;
 
 import me.zhengjie.modules.yy.domain.Reserve;
-import me.zhengjie.modules.yy.domain.ReserveVerify;
 import me.zhengjie.modules.yy.service.dto.*;
 import org.springframework.data.domain.Pageable;
 
@@ -122,5 +121,32 @@ public interface ReserveService {
      */
     void download(List<ReserveDto> all, HttpServletResponse response) throws IOException;
 
+    /**
+     * 查询今日预约统计
+     *
+     * @return .
+     */
+    TodayReserveCountDto queryTodayCount(Long deptId);
+
+    /**
+     * 查询一周的预约统计
+     *
+     * @return .
+     */
+    List<WeekReserveCountDto> queryWeekCount(Long deptId);
+
+    /**
+     * 查询今日预约统计, 按时段汇总
+     *
+     * @return .
+     */
+    List<Long> queryTodayCountGroupByWorkTime(Long deptId);
+
+    /**
+     * 查询今日资源统计, 按时段汇总
+     *
+     * @return .
+     */
+    List<List<Long>> queryTodayCountGroupByWorkTimeAndResourceGroup(Long deptId);
 
 }

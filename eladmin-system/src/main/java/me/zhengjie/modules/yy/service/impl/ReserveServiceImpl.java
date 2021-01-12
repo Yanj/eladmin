@@ -26,6 +26,7 @@ import org.springframework.transaction.annotation.Transactional;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.math.BigInteger;
+import java.time.LocalDateTime;
 import java.util.*;
 
 /**
@@ -620,4 +621,141 @@ public class ReserveServiceImpl implements ReserveService {
         }
         FileUtil.downloadExcel(list, response);
     }
+
+    @Override
+    public TodayReserveCountDto queryTodayCount(Long deptId) {
+        TodayReserveCountDto res = new TodayReserveCountDto();
+        String date = TimeUtil.getCurrentDate();
+        List<Map<String, Object>> list = repository.queryTodayCount(deptId, date);
+        for (Map<String, Object> item : list) {
+            String status = item.get("status").toString();
+            int count = Integer.parseInt(item.get("count").toString());
+            if ("all".equalsIgnoreCase(status)) {
+                res.setTotalCount(count);
+            } else if ("init".equalsIgnoreCase(status)) {
+                res.setPreprocessCount(count);
+            } else if ("check_in".equalsIgnoreCase(status)) {
+                res.setProcessingCount(count);
+            } else if ("verified".equalsIgnoreCase(status)) {
+                res.setProcessedCount(count);
+            }
+        }
+        return res;
+    }
+
+    @Override
+    public List<WeekReserveCountDto> queryWeekCount(Long deptId) {
+        List<WeekReserveCountDto> resList = new ArrayList<>();
+
+        for (int i = 0; i < 2; i++) {
+            List<String> dateList = TimeUtil.getWeekDateRange(-i);
+            String endDate = dateList.get(dateList.size() - 1);
+            String beginDate = dateList.get(0);
+
+            WeekReserveCountDto weekReserveCount = new WeekReserveCountDto();
+            // all
+            List<Map<String, Object>> list = repository.queryRangeCountByStatusNotEquals(deptId, beginDate, endDate, "canceled");
+            List<Long> allList = processDateListCount(dateList, list);
+            weekReserveCount.setAll(allList);
+
+            // init
+            list = repository.queryRangeCountByStatusEquals(deptId, beginDate, endDate, "init");
+            List<Long> initList = processDateListCount(dateList, list);
+            weekReserveCount.setInit(initList);
+
+            // check in
+            list = repository.queryRangeCountByStatusEquals(deptId, beginDate, endDate, "check_in");
+            List<Long> checkInList = processDateListCount(dateList, list);
+            weekReserveCount.setCheckIn(checkInList);
+
+            // verified
+            list = repository.queryRangeCountByStatusEquals(deptId, beginDate, endDate, "verified");
+            List<Long> verifiedList = processDateListCount(dateList, list);
+            weekReserveCount.setVerified(verifiedList);
+
+            resList.add(weekReserveCount);
+        }
+
+        return resList;
+    }
+
+    private List<Long> processDateListCount(List<String> dateList, List<Map<String, Object>> list) {
+        List<Long> resList = new ArrayList<>();
+        for (String date : dateList) {
+            long count = 0L;
+            for (Map<String, Object> item : list) {
+                if (date.equals(item.get("date").toString())) {
+                    count = Long.parseLong(item.get("count").toString());
+                    break;
+                }
+            }
+            resList.add(count);
+        }
+        return resList;
+    }
+
+
+    @Override
+    public List<Long> queryTodayCountGroupByWorkTime(Long deptId) {
+        List<Long> resList = new ArrayList<>();
+
+        // 查询今日预约数量统计
+        String date = TimeUtil.getCurrentDate();
+        List<Map<String, Object>> list = repository.queryCountGroupByWorkTimeId(deptId, date);
+
+        // 查询所有时段
+        List<WorkTime> workTimeList = workTimeRepository.findAllByDeptIdOrderByBeginTime(deptId);
+
+        // 处理数据
+        for (WorkTime workTime : workTimeList) {
+            long count = 0;
+            for (Map<String, Object> item : list) {
+                if (workTime.getId().toString().equals(item.get("work_time_id").toString())) {
+                    count = Long.parseLong(item.get("count").toString());
+                    break;
+                }
+            }
+            resList.add(count);
+        }
+
+        return resList;
+    }
+
+    @Override
+    public List<List<Long>> queryTodayCountGroupByWorkTimeAndResourceGroup(Long deptId) {
+        List<List<Long>> resList = new ArrayList<>();
+
+        // 根据工作时段和资源组进行统计
+        String date = TimeUtil.getCurrentDate();
+        List<Map<String, Object>> list = repository.queryCountGroupByWorkTimeAndResourceGroup(deptId, date);
+
+        // 查询所有时段
+        List<WorkTime> workTimeList = workTimeRepository.findAllByDeptIdOrderByBeginTime(deptId);
+
+        // 查询所有资源
+        List<ResourceGroup> resourceGroupList = resourceGroupRepository.findAllByDeptId(deptId);
+
+        // 循环工作时间段列表
+        for (WorkTime workTime : workTimeList) {
+            String workTimeId = workTime.getId().toString();
+            List<Long> workTimeCountList = new ArrayList<>();
+            // 循环资源组列表
+            for (ResourceGroup resourceGroup : resourceGroupList) {
+                String resourceGroupId = resourceGroup.getId().toString();
+                long count = 0;
+                // 循环数据
+                for (Map<String, Object> item : list) {
+                    if (item.get("work_time_id").toString().equals(workTimeId) && item.get("resource_group_id").toString().equals(resourceGroupId)) {
+                        count = Long.parseLong(item.get("count").toString());
+                        break;
+                    }
+                }
+                workTimeCountList.add(count);
+            }
+            resList.add(workTimeCountList);
+        }
+
+        return resList;
+    }
+
 }
