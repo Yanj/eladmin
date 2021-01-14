@@ -50,6 +50,22 @@ public interface PatientTermService {
     PatientTermDto create(PatientTerm resources);
 
     /**
+     * 创建
+     *
+     * @param resources /
+     * @return PatientTermDto
+     */
+    PatientTermDto createFreeOne(PatientTerm resources);
+
+    /**
+     * 创建
+     *
+     * @param resources /
+     * @return PatientTermDto
+     */
+    PatientTermDto createFreeTwo(PatientTerm resources);
+
+    /**
      * 编辑
      *
      * @param resources /

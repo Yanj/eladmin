@@ -62,6 +62,22 @@ public class PatientTermController {
         return new ResponseEntity<>(patientTermService.queryAll(criteria, pageable), HttpStatus.OK);
     }
 
+    @Log("新增免费患者套餐")
+    @ApiOperation("新增免费患者套餐")
+    @PostMapping("/freeOne")
+    @AnonymousAccess
+    public ResponseEntity<Object> createFreeOne(@Validated @RequestBody PatientTerm resources) {
+        return new ResponseEntity<>(patientTermService.createFreeOne(resources), HttpStatus.CREATED);
+    }
+
+    @Log("新增免费患者套餐")
+    @ApiOperation("新增免费患者套餐")
+    @PostMapping("/freeTwo")
+    @AnonymousAccess
+    public ResponseEntity<Object> createFreeTwo(@Validated @RequestBody PatientTerm resources) {
+        return new ResponseEntity<>(patientTermService.createFreeTwo(resources), HttpStatus.CREATED);
+    }
+
     @Log("新增患者套餐")
     @ApiOperation("新增患者套餐")
     @PostMapping

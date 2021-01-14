@@ -16,6 +16,8 @@ public class PatientTermDto implements Serializable {
 
     private Long id;
 
+    private PatientTermDto parent;
+
     private PatientDto patient;
 
     private Long patientId;
@@ -35,6 +37,8 @@ public class PatientTermDto implements Serializable {
     private Long price;
 
     private Integer times;
+
+    private Integer freeTimes;
 
     private String status;
 

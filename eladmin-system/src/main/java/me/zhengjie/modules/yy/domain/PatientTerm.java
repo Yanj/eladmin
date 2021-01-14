@@ -31,6 +31,11 @@ public class PatientTerm implements Serializable {
 
     @JSONField(serialize = false)
     @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "pid")
+    private PatientTerm parent;
+
+    @JSONField(serialize = false)
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "patient_id")
     private Patient patient;
 
@@ -49,6 +54,9 @@ public class PatientTerm implements Serializable {
     private Long price;
 
     private Integer times;
+
+    @Column(name = "free_times")
+    private Integer freeTimes;
 
     private String status;
 
