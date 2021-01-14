@@ -7,6 +7,7 @@ import me.zhengjie.annotation.AnonymousAccess;
 import me.zhengjie.annotation.Log;
 import me.zhengjie.modules.yy.domain.ReserveResource;
 import me.zhengjie.modules.yy.service.ReserveResourceService;
+import me.zhengjie.modules.yy.service.dto.ReserveCountCriteria;
 import me.zhengjie.modules.yy.service.dto.ReserveResourceCriteria;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
@@ -41,8 +42,8 @@ public class ReserveResourceController {
     @ApiOperation("查询预约资源统计")
     @GetMapping("/reserveCount")
     @AnonymousAccess
-    public ResponseEntity<Object> reserveCount(@RequestParam("deptId") Long deptId) {
-        return new ResponseEntity<>(reserveResourceService.queryReserveCount(deptId), HttpStatus.OK);
+    public ResponseEntity<Object> reserveCount(ReserveCountCriteria criteria) {
+        return new ResponseEntity<>(reserveResourceService.queryReserveCount(criteria), HttpStatus.OK);
     }
 
     @Log("查询预约资源")

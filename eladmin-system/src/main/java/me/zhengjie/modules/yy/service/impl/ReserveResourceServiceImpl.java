@@ -4,13 +4,16 @@ import lombok.RequiredArgsConstructor;
 import me.zhengjie.modules.yy.domain.*;
 import me.zhengjie.modules.yy.repository.*;
 import me.zhengjie.modules.yy.service.ReserveResourceService;
+import me.zhengjie.modules.yy.service.dto.ReserveCountCriteria;
 import me.zhengjie.modules.yy.service.dto.ReserveResourceCriteria;
 import me.zhengjie.modules.yy.service.dto.ReserveResourceDto;
 import me.zhengjie.modules.yy.service.mapstruct.ReserveResourceMapper;
+import me.zhengjie.modules.yy.util.TimeUtil;
 import me.zhengjie.utils.FileUtil;
 import me.zhengjie.utils.PageUtil;
 import me.zhengjie.utils.QueryHelp;
 import me.zhengjie.utils.ValidationUtil;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -91,7 +94,8 @@ public class ReserveResourceServiceImpl implements ReserveResourceService {
     }
 
     @Override
-    public List<Map<String, Object>> queryReserveCount(Long deptId) {
+    public List<Map<String, Object>> queryReserveCount(ReserveCountCriteria criteria) {
+        final Long deptId = criteria.getDeptId();
         // 查询工作时间段列表
         List<WorkTime> workTimeList = workTimeRepository.findAllByDeptIdOrderByBeginTime(deptId);
         // 查询资源组列表
@@ -103,11 +107,30 @@ public class ReserveResourceServiceImpl implements ReserveResourceService {
         // 查询可用资源最小数量
         List<ResourceGroupCount> resourceGroupCountList = resourceGroupCountRepository.findAllByDeptId(deptId);
 
+        List<String> dateRange = null;
+        if (StringUtils.isNotEmpty(criteria.getBeginDate()) && StringUtils.isNotEmpty(criteria.getEndDate())) {
+            dateRange = TimeUtil.getDateRange(criteria.getBeginDate(), criteria.getEndDate());
+        }
+
         List<Map<String, Object>> list = new ArrayList<>();
         // 遍历日期
         for (String date : dateList) {
+            if (StringUtils.isNotEmpty(criteria.getBeginDate()) && date.compareTo(criteria.getBeginDate()) < 0) {
+                continue;
+            }
+            if (StringUtils.isNotEmpty(criteria.getEndDate()) && date.compareTo(criteria.getEndDate()) > 0) {
+                continue;
+            }
+
             // 遍历工作时段
             for (WorkTime workTime : workTimeList) {
+                if (StringUtils.isNotEmpty(criteria.getBeginTime()) && workTime.getBeginTime().compareTo(criteria.getBeginTime()) < 0) {
+                    continue;
+                }
+                if (StringUtils.isNotEmpty(criteria.getEndTime()) && workTime.getEndTime().compareTo(criteria.getEndTime()) > 0) {
+                    continue;
+                }
+
                 Map<String, Object> item = new HashMap<>();
                 item.put("date", date);
                 item.put("workTime", workTime);
@@ -117,7 +140,6 @@ public class ReserveResourceServiceImpl implements ReserveResourceService {
                 Map<String, Object> countMap = new HashMap<>();
 
                 Map<String, Object> leftMap = new HashMap<>();
-
 
                 // 遍历资源组
                 for (ResourceGroupCount resourceGroupCount : resourceGroupCountList) {

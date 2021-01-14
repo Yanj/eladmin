@@ -1,6 +1,7 @@
 package me.zhengjie.modules.yy.service;
 
 import me.zhengjie.modules.yy.domain.ReserveResource;
+import me.zhengjie.modules.yy.service.dto.ReserveCountCriteria;
 import me.zhengjie.modules.yy.service.dto.ReserveResourceCriteria;
 import me.zhengjie.modules.yy.service.dto.ReserveResourceDto;
 import org.springframework.data.domain.Pageable;
@@ -75,8 +76,8 @@ public interface ReserveResourceService {
     /**
      * 查询预约资源统计
      *
-     * @param deptId .
+     * @param criteria .
      * @return .
      */
-    List<Map<String, Object>> queryReserveCount(Long deptId);
+    List<Map<String, Object>> queryReserveCount(ReserveCountCriteria criteria);
 }
