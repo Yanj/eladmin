@@ -27,6 +27,14 @@ public interface PatientService {
     Map<String, Object> querySync(PatientCriteria criteria, Pageable pageable);
 
     /**
+     * 查询
+     *
+     * @param criteria .
+     * @return .
+     */
+    List<PatientDto> query(PatientCriteria criteria);
+
+    /**
      * 同步患者数据
      *
      * @param hisCkItemVo .

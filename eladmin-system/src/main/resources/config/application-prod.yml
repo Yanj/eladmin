@@ -132,8 +132,9 @@ his:
 
 # sms
 sms:
-  enable: false
-  chanel:
+  enable: true
+  channel:
+    host: sdk2.028lk.com
     server: https://sdk2.028lk.com/sdk2/
     opName: BatchSend2.aspx
     corpId: CDJS002621

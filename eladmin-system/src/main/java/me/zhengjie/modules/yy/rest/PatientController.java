@@ -55,6 +55,14 @@ public class PatientController {
         return new ResponseEntity<>(patientService.queryAll(criteria, pageable), HttpStatus.OK);
     }
 
+    @Log("查询患者")
+    @ApiOperation("查询患者")
+    @GetMapping("/query")
+    @AnonymousAccess
+    public ResponseEntity<Object> querySingle(PatientCriteria criteria) throws Exception {
+        return new ResponseEntity<>(patientService.query(criteria), HttpStatus.OK);
+    }
+
     @Log("同步患者")
     @ApiOperation("同步患者")
     @PutMapping("/sync")

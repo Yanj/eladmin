@@ -153,10 +153,20 @@ public class ReserveResourceServiceImpl implements ReserveResourceService {
                         if (null == reserveResourceGroupCount) {
                             continue;
                         }
-                        if (Objects.equals(resourceGroupCount.getId(), reserveResourceGroupCount.getPk().getResourceGroupId())) {
-                            useCount = reserveResourceGroupCount;
-                            break;
+                        if (!Objects.equals(deptId, reserveResourceGroupCount.getPk().getDeptId())) {
+                            continue;
                         }
+                        if (!StringUtils.equals(date, reserveResourceGroupCount.getPk().getDate())) {
+                            continue;
+                        }
+                        if (!Objects.equals(workTime.getId(), reserveResourceGroupCount.getPk().getWorkTimeId())) {
+                            continue;
+                        }
+                        if (!Objects.equals(resourceGroupCount.getId(), reserveResourceGroupCount.getPk().getResourceGroupId())) {
+                            continue;
+                        }
+                        useCount = reserveResourceGroupCount;
+                        break;
                     }
                     int usedCount = 0;
                     if (null != useCount && null != useCount.getCount()) {
@@ -189,8 +199,8 @@ public class ReserveResourceServiceImpl implements ReserveResourceService {
         Calendar calendar = Calendar.getInstance();
         List<String> dateList = new ArrayList<>();
         for (int i = 0; i < 14; i++) {
-            calendar.add(Calendar.DAY_OF_MONTH, 1);
             dateList.add(dateFormat.format(calendar.getTime()));
+            calendar.add(Calendar.DAY_OF_MONTH, 1);
         }
         return dateList;
     }

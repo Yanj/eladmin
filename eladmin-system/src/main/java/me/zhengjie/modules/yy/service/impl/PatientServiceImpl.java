@@ -89,6 +89,21 @@ public class PatientServiceImpl implements PatientService {
         return queryAll(criteria, pageable);
     }
 
+    @Override
+    public List<PatientDto> query(PatientCriteria criteria) {
+        HisCkInfoTypeEnum infoType = HisCkInfoTypeEnum.valueOf(criteria.getInfoType());
+        if (infoType == HisCkInfoTypeEnum.PHONE) {
+            return mapper.toDto(repository.findAllByPhone(criteria.getPatientInfo()));
+        }
+        if (infoType == HisCkInfoTypeEnum.MRN) {
+            return mapper.toDto(repository.findAllByMrn(criteria.getPatientInfo()));
+        }
+        if (infoType == HisCkInfoTypeEnum.NAME) {
+            return mapper.toDto(repository.findAllByName(criteria.getPatientInfo()));
+        }
+        return new ArrayList<>(0);
+    }
+
     @Transactional(rollbackFor = Exception.class)
     @Override
     public Map<String, Object> sync(HisCkItemVo hisCkItemVo) throws Exception {

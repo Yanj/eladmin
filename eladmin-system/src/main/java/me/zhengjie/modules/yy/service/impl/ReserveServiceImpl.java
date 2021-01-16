@@ -50,7 +50,6 @@ public class ReserveServiceImpl implements ReserveService {
     private final ResourceRepository resourceRepository;
     private final ReserveResourceRepository reserveResourceRepository;
     private final ReserveLogRepository reserveLogRepository;
-    private final ReserveVerifyRepository reserveVerifyRepository;
     private final SmsRepository smsRepository;
     private final WorkTimeRepository workTimeRepository;
 
