@@ -86,7 +86,8 @@ public class PatientColServiceImpl implements PatientColService {
     public void deleteAll(Long[] ids) {
         for (Long id : ids) {
             // 更新状态
-            repository.updateStatus(id, "0");
+//            repository.updateStatus(id, "0");
+            repository.deleteById(id);
         }
     }
 

@@ -220,6 +220,16 @@ public class ReserveServiceImpl implements ReserveService {
         if (null == resources.getWorkTime() || null == resources.getWorkTime().getId()) {
             throw new RuntimeException("时段不能为空");
         }
+        WorkTime workTime = workTimeRepository.findById(resources.getWorkTime().getId()).orElseGet(WorkTime::new);
+        if (null == workTime.getId()) {
+            throw new RuntimeException("时段不存在");
+        }
+        if (StringUtils.isEmpty(resources.getBeginTime())) {
+            resources.setBeginTime(workTime.getBeginTime());
+        }
+        if (StringUtils.isEmpty(resources.getEndTime())) {
+            resources.setEndTime(workTime.getEndTime());
+        }
         // 获取患者套餐
         PatientTerm patientTerm = resources.getPatientTerm();
         if (null == patientTerm || null == patientTerm.getId()) {
@@ -698,15 +708,33 @@ public class ReserveServiceImpl implements ReserveService {
     public TodayWorkTimeReserveCountDto queryTodayCountGroupByWorkTime(Long deptId) {
         TodayWorkTimeReserveCountDto todayWorkTimeReserveCount = new TodayWorkTimeReserveCountDto();
         List<String> workTimes = new ArrayList<>();
-        List<Long> counts = new ArrayList<>();
-
-        // 查询今日预约数量统计
-        String date = TimeUtil.getCurrentDate();
-        List<Map<String, Object>> list = repository.queryCountGroupByWorkTimeId(deptId, date);
 
         // 查询所有时段
         List<WorkTime> workTimeList = workTimeRepository.findAllByDeptIdOrderByBeginTime(deptId);
 
+        // 处理时间数据
+        for (WorkTime workTime : workTimeList) {
+            workTimes.add(workTime.getBeginTime());
+        }
+        todayWorkTimeReserveCount.setWorkTimes(workTimes);
+
+        // 查询今日预约数量统计
+        String todayDate = TimeUtil.getCurrentDate();
+        List<Map<String, Object>> todayList = repository.queryCountGroupByWorkTimeId(deptId, todayDate);
+
+        todayWorkTimeReserveCount.setCounts(processCountList(todayList, workTimeList));
+
+        // 查询昨日预约数量统计
+        String prevDate = TimeUtil.getCurrentDate(-1);
+        List<Map<String, Object>> prevList = repository.queryCountGroupByWorkTimeId(deptId, prevDate);
+
+        todayWorkTimeReserveCount.setPrevCounts(processCountList(prevList, workTimeList));
+
+        return todayWorkTimeReserveCount;
+    }
+
+    private List<Long> processCountList(List<Map<String, Object>> list, List<WorkTime> workTimeList) {
+        List<Long> counts = new ArrayList<>();
         // 处理数据
         for (WorkTime workTime : workTimeList) {
             long count = 0;
@@ -716,14 +744,9 @@ public class ReserveServiceImpl implements ReserveService {
                     break;
                 }
             }
-            workTimes.add(workTime.getBeginTime());
             counts.add(count);
         }
-
-        todayWorkTimeReserveCount.setCounts(counts);
-        todayWorkTimeReserveCount.setWorkTimes(workTimes);
-
-        return todayWorkTimeReserveCount;
+        return counts;
     }
 
     @Override

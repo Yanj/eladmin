@@ -21,7 +21,7 @@ public interface PatientColRepository extends JpaRepository<PatientCol, Long>, J
     @Modifying
     @Query(
             value = "insert into yy_patient_col(patient_id, dept_id, status) " +
-                    "select id, ?1, '1' from yy_patient where id not in (select patient_id from yy_patient_col) ",
+                    "select id, ?1, '1' from yy_patient where id not in (select patient_id from yy_patient_col where dept_id = ?1) ",
             nativeQuery = true
     )
     int insertByDeptId(Long deptId);

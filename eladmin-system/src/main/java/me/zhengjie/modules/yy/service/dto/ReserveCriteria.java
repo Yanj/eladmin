@@ -30,4 +30,7 @@ public class ReserveCriteria implements Serializable {
     @Query(joinName = "patientTerm", propName = "id")
     private Long patientTermId;
 
+    @Query(type = Query.Type.INNER_LIKE, joinName = "patient", propName = "name")
+    private String patientName;
+
 }

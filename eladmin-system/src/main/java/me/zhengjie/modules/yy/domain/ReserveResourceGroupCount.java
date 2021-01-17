@@ -24,6 +24,7 @@ select dept_id, date, work_time_id, resource_group_id, count(resource_group_id) 
         "  r.resource_group_id as resource_group_id, " +
         "  count(r.resource_group_id) as count " +
         "from yy_reserve r " +
+        "where r.status <> 'canceled' " +
         "group by dept_id, date, work_time_id, resource_group_id "
 )
 @Entity

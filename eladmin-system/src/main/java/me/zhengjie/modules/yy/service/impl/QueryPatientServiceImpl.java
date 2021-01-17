@@ -76,6 +76,7 @@ public class QueryPatientServiceImpl implements QueryPatientService {
     public QueryPatientDto create(QueryPatient resources) {
         // 新增患者信息
         Patient patient = new Patient();
+        patient.setCode(resources.getCode());
         patient.setName(resources.getName());
         patient.setMrn(resources.getMrn());
         patient.setPhone(resources.getPhone());
