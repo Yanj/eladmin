@@ -17,6 +17,34 @@ import java.util.Map;
 public interface ReserveRepository extends JpaRepository<Reserve, Long>, JpaSpecificationExecutor<Reserve> {
 
     /**
+     * 查询某医院某时间内每天各套餐预约总数
+     * @param deptId .
+     * @param beginDate .
+     * @param endDate .
+     * @return .
+     */
+    /*
+select term_id, `date`, count(1) from yy_reserve where dept_id = 32 and `date` >= '2021-01-16' and `date` < '2021-01-19' group by term_id, `date`
+     */
+    @Query(
+            value = "" +
+                    "select " +
+                    "term_id as term_id, " +
+                    "`date` as date, " +
+                    "count(1) as count " +
+                    "from yy_reserve " +
+                    "where " +
+                    "    dept_id = ?1 " +
+                    "and status <> 'canceled' " +
+                    "and `date` >= ?2 " +
+                    "and `date` <= ?3 " +
+                    "group by term_id, `date`;" +
+                    "",
+            nativeQuery = true
+    )
+    List<Map<String, Object>> queryTermCount(Long deptId, String beginDate, String endDate);
+
+    /**
      * 查询某日各时段资源占用数量
      *
      * @param date .

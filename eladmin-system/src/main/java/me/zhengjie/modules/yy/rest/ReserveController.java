@@ -71,6 +71,13 @@ public class ReserveController {
     }
 
     @ApiOperation("查询预约统计")
+    @GetMapping("/termCount")
+    @AnonymousAccess
+    public ResponseEntity<Object> queryTermCount(ReserveCountCriteria criteria) {
+        return new ResponseEntity<>(reserveService.queryTermCount(criteria.getDeptId(), criteria.getDate(), criteria.getDays()), HttpStatus.OK);
+    }
+
+    @ApiOperation("查询预约统计")
     @GetMapping("/reserveCount")
     @AnonymousAccess
     public ResponseEntity<Object> queryReserveCount(ReserveCountCriteria criteria) {
@@ -88,7 +95,7 @@ public class ReserveController {
     @ApiOperation("预约取消")
     @PostMapping("/verify")
     @AnonymousAccess
-    public ResponseEntity<Object> verify(@RequestBody Reserve resources) {
+    public ResponseEntity<Object> verify(@RequestBody Reserve resources) throws Exception {
         return new ResponseEntity<>(reserveService.verify(resources), HttpStatus.OK);
     }
 
@@ -96,7 +103,7 @@ public class ReserveController {
     @ApiOperation("预约取消")
     @PostMapping("/cancel")
     @AnonymousAccess
-    public ResponseEntity<Object> cancel(@RequestBody Reserve resources) {
+    public ResponseEntity<Object> cancel(@RequestBody Reserve resources) throws Exception {
         return new ResponseEntity<>(reserveService.cancel(resources), HttpStatus.OK);
     }
 

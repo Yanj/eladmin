@@ -39,6 +39,14 @@ public class WorkTimeController {
 
     @Log("查询工作时间")
     @ApiOperation("查询工作时间")
+    @GetMapping("/list")
+    @AnonymousAccess
+    public ResponseEntity<Object> query(WorkTimeCriteria criteria) {
+        return new ResponseEntity<>(workTimeService.queryAll(criteria), HttpStatus.OK);
+    }
+
+    @Log("查询工作时间")
+    @ApiOperation("查询工作时间")
     @GetMapping
     @AnonymousAccess
     public ResponseEntity<Object> query(WorkTimeCriteria criteria, Pageable pageable) {

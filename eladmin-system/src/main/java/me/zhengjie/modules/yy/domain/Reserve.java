@@ -7,6 +7,7 @@ import io.swagger.annotations.ApiModelProperty;
 import lombok.Getter;
 import lombok.Setter;
 import me.zhengjie.modules.system.domain.Dept;
+import me.zhengjie.modules.system.domain.User;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 import org.springframework.data.annotation.CreatedBy;
@@ -65,6 +66,11 @@ public class Reserve implements Serializable {
     @OneToMany(fetch = FetchType.LAZY)
     @JoinColumn(name = "reserve_id", referencedColumnName = "id")
     private Set<ReserveResource> reserveResources;
+
+    @JSONField(serialize = false)
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "operator_id")
+    private User operator;
 
     private String date;
 

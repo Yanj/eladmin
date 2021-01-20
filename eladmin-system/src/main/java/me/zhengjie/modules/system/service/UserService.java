@@ -40,6 +40,13 @@ public interface UserService {
     UserDto findById(long id);
 
     /**
+     * 根据部门 ID 查询
+     * @param deptId .
+     * @return
+     */
+    List<UserDto> findByDeptId(Long deptId);
+
+    /**
      * 新增用户
      * @param resources /
      */

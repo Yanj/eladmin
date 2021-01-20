@@ -15,6 +15,8 @@ public class ReserveCountCriteria implements Serializable {
 
     private String date;
 
+    private int days;
+
     private Long termId;
 
     private Long resourceGroupId;

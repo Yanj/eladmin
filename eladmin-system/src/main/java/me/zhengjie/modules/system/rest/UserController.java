@@ -19,6 +19,7 @@ import cn.hutool.core.collection.CollectionUtil;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import lombok.RequiredArgsConstructor;
+import me.zhengjie.annotation.AnonymousAccess;
 import me.zhengjie.annotation.Log;
 import me.zhengjie.config.RsaProperties;
 import me.zhengjie.modules.system.service.DataService;
@@ -71,6 +72,13 @@ public class UserController {
     @PreAuthorize("@el.check('user:list')")
     public void download(HttpServletResponse response, UserQueryCriteria criteria) throws IOException {
         userService.download(userService.queryAll(criteria), response);
+    }
+
+    @ApiOperation("查询用户")
+    @GetMapping("/dept/{deptId}")
+    @AnonymousAccess
+    public ResponseEntity<Object> query(@PathVariable("deptId") Long deptId){
+        return new ResponseEntity<>(userService.findByDeptId(deptId), HttpStatus.OK);
     }
 
     @ApiOperation("查询用户")

@@ -4,6 +4,7 @@ import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
+import java.time.temporal.TemporalUnit;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.List;
@@ -71,14 +72,24 @@ public class TimeUtil {
      * @return .
      */
     public static String getCurrentDate(int offset) {
-        Calendar cal = Calendar.getInstance();
-        cal.add(Calendar.DAY_OF_YEAR, offset);
-
         LocalDate localDate = LocalDate.now();
         localDate = localDate.plus(offset, ChronoUnit.DAYS);
 
         return DateTimeFormatter.ofPattern("yyyy-MM-dd")
                 .format(localDate);
+    }
+
+    /**
+     * 获取当前日期
+     *
+     * @param offset .
+     * @return .
+     */
+    public static String getDate(String date, int offset) {
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+        LocalDate localDate = LocalDate.parse(date, formatter);
+        localDate = localDate.plus(offset, ChronoUnit.DAYS);
+        return localDate.format(formatter);
     }
 
     /**

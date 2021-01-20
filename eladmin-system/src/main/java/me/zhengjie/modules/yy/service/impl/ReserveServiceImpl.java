@@ -3,6 +3,8 @@ package me.zhengjie.modules.yy.service.impl;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import me.zhengjie.domain.vo.SmsVo;
+import me.zhengjie.modules.security.service.dto.JwtUserDto;
+import me.zhengjie.modules.system.service.dto.RoleSmallDto;
 import me.zhengjie.modules.yy.domain.*;
 import me.zhengjie.modules.yy.repository.*;
 import me.zhengjie.modules.yy.service.ReserveService;
@@ -13,13 +15,11 @@ import me.zhengjie.modules.yy.service.mapstruct.TermSmallMapper;
 import me.zhengjie.modules.yy.service.mapstruct.WorkTimeSmallMapper;
 import me.zhengjie.modules.yy.util.TimeUtil;
 import me.zhengjie.service.SmsChannelService;
-import me.zhengjie.utils.FileUtil;
-import me.zhengjie.utils.PageUtil;
-import me.zhengjie.utils.QueryHelp;
-import me.zhengjie.utils.ValidationUtil;
+import me.zhengjie.utils.*;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -59,6 +59,45 @@ public class ReserveServiceImpl implements ReserveService {
 
     private final SmsChannelService smsChannelService;
 
+    public List<Map<String, Object>> queryTermCount(Long deptId, String _date, int days) {
+        if (null == deptId) {
+            throw new RuntimeException("部门ID不能为空");
+        }
+        if (days < 0) {
+            throw new RuntimeException("days必须大于等于0");
+        }
+        String beginDate = TimeUtil.getDate(_date, 0);
+        String endDate = TimeUtil.getDate(_date, days);
+
+        // 查询所有套餐
+        List<Term> termList = termRepository.findAllByDeptId(deptId);
+        // 查询套餐预约统计
+        List<Map<String, Object>> termCountList = repository.queryTermCount(deptId, beginDate, endDate);
+        // 日期范围
+        List<String> dateList = TimeUtil.getDateRange(beginDate, endDate);
+
+        List<Map<String, Object>> resList = new ArrayList<>();
+        for (Term term : termList) {
+            Map<String, Object> map = new HashMap<>();
+            map.put("name", term.getName());
+            List<Long> data = new ArrayList<>();
+            for (String date : dateList) {
+                long count = 0;
+                for (Map<String, Object> termCount : termCountList) {
+                    if (Objects.equals(termCount.get("term_id").toString(), term.getId().toString()) && StringUtils.equals(termCount.get("date").toString(),
+                            date)) {
+                        count = Long.parseLong(termCount.get("count").toString());
+                        break;
+                    }
+                }
+                data.add(count);
+            }
+            map.put("data", data);
+            resList.add(map);
+        }
+        return resList;
+    }
+
     @Transactional(rollbackFor = Exception.class)
     @Override
     public void automaticCancel() {
@@ -66,7 +105,11 @@ public class ReserveServiceImpl implements ReserveService {
         List<Reserve> list = repository.findByStatusAndDateLessThan("init", date);
         if (null != list && !list.isEmpty()) {
             for (Reserve reserve : list) {
-                cancel(reserve);
+                try {
+                    cancel(reserve, true);
+                } catch (Exception e) {
+                    log.error("自动取消任务失败:", e);
+                }
             }
         }
     }
@@ -365,7 +408,7 @@ public class ReserveServiceImpl implements ReserveService {
 
     @Transactional
     @Override
-    public ReserveDto verify(Reserve resources) {
+    public ReserveDto verify(Reserve resources) throws Exception {
         if (null == resources.getResourceGroup()) {
             throw new RuntimeException("资源组不能为空");
         }
@@ -429,20 +472,30 @@ public class ReserveServiceImpl implements ReserveService {
         // 更新预约状态
         final String oldStatus = reserve.getStatus();
         reserve.setStatus("verified");
+        // 更新操作员
+        reserve.setOperator(resources.getOperator());
         repository.save(reserve);
 
-//        // 发送短信
-//        if (!StringUtils.isEmpty(patient.getPhone())) {
-//            Sms sms = new Sms();
-//            sms.setBusType("reserve");
-//            sms.setBusId(reserve.getId());
-//            sms.setMobile(patient.getPhone());
-//            String content = String.format("您预约的套餐[%s], 预约时间 %s %s, 已使用成功, 感谢您的信任, %s",
-//                    patientTerm.getTermName(), reserve.getDate(), reserve.getBeginTime(), reserve.getDept().getName());
-//            sms.setContent(content);
-//            sms.setStatus("init");
-//            smsRepository.save(sms);
-//        }
+        // 发送短信
+        if (!StringUtils.isEmpty(patient.getPhone())) {
+            Sms sms = new Sms();
+            sms.setBusType("reserve");
+            sms.setBusId(reserve.getId());
+            sms.setMobile(patient.getPhone());
+            String content = String.format(
+                    "尊敬的%s女士您好！您预约了%s %s-%s（%s）%s项目(已使用核销)，如有问题请电话咨询028-65311659， 感谢您的配合！ 地址：成都市青羊区包家巷77号.退订回T",
+                    patient.getName(),
+                    reserve.getDate(), reserve.getBeginTime(), reserve.getEndTime(), TimeUtil.getWeekDayText(reserve.getDate()),
+                    patientTerm.getTermName());
+            sms.setContent(content);
+
+            // 发送短信
+            SmsVo smsVo = new SmsVo(sms.getMobile(), sms.getContent());
+            String res = smsChannelService.sendSms(smsVo);
+            sms.setStatus(res);
+
+            smsRepository.save(sms);
+        }
 
         // 新增日志
         ReserveLog reserveLog = new ReserveLog();
@@ -458,7 +511,11 @@ public class ReserveServiceImpl implements ReserveService {
 
     @Transactional
     @Override
-    public ReserveDto cancel(Reserve resources) {
+    public ReserveDto cancel(Reserve resources) throws Exception {
+        return cancel(resources, false);
+    }
+
+    public ReserveDto cancel(Reserve resources, boolean bySystem) throws Exception {
         if (null == resources || null == resources.getId()) {
             throw new RuntimeException("预约不能为空");
         }
@@ -474,9 +531,19 @@ public class ReserveServiceImpl implements ReserveService {
             return mapper.toDto(reserve);
         }
 
-        // TODO 已核销的作废, 检查权限, 更新相关数据
+        // 已核销的作废, 检查权限, 更新相关数据
         if ("verified".equalsIgnoreCase(reserve.getStatus())) {
-
+            boolean hasRole = false;
+            JwtUserDto currentUser = (JwtUserDto) SecurityUtils.getCurrentUser();
+            for (RoleSmallDto role : currentUser.getUser().getRoles()) {
+                if (role.getLevel() < 6) {
+                    hasRole = true;
+                    break;
+                }
+            }
+            if (!hasRole) {
+                throw new RuntimeException("抱歉, 您无权进行此操作, 请联系上级或者管理员进行操作");
+            }
         }
 
         // 获取患者套餐
@@ -507,18 +574,26 @@ public class ReserveServiceImpl implements ReserveService {
         // 删除资源
         reserveResourceRepository.deleteByReserveId(reserve.getId());
 
-//        // 发送短信
-//        if (!StringUtils.isEmpty(patient.getPhone())) {
-//            Sms sms = new Sms();
-//            sms.setBusType("reserve");
-//            sms.setBusId(reserve.getId());
-//            sms.setMobile(patient.getPhone());
-//            String content = String.format("您预约的套餐[%s], 预约时间%s %s, 已签到成功, %s",
-//                    patientTerm.getTermName(), reserve.getDate(), reserve.getBeginTime(), reserve.getDept().getName());
-//            sms.setContent(content);
-//            sms.setStatus("init");
-//            smsRepository.save(sms);
-//        }
+        // 发送短信
+        if (!StringUtils.isEmpty(patient.getPhone()) && !bySystem) {
+            Sms sms = new Sms();
+            sms.setBusType("reserve");
+            sms.setBusId(reserve.getId());
+            sms.setMobile(patient.getPhone());
+            String content = String.format(
+                    "尊敬的%s女士您好！您预约了%s %s-%s（%s）%s项目(已取消)，如有问题请电话咨询028-65311659， 感谢您的配合！ 地址：成都市青羊区包家巷77号.退订回T",
+                    patient.getName(),
+                    resources.getDate(), resources.getBeginTime(), resources.getEndTime(), TimeUtil.getWeekDayText(resources.getDate()),
+                    patientTerm.getTermName());
+            sms.setContent(content);
+
+            // 发送短信
+            SmsVo smsVo = new SmsVo(sms.getMobile(), sms.getContent());
+            String res = smsChannelService.sendSms(smsVo);
+            sms.setStatus(res);
+
+            smsRepository.save(sms);
+        }
 
         // 新增日志
         ReserveLog reserveLog = new ReserveLog();

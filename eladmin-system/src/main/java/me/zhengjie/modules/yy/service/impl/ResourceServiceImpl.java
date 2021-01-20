@@ -20,10 +20,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /**
  * @author yanjun
@@ -78,24 +75,54 @@ public class ResourceServiceImpl implements ResourceService {
         if (null == resourceCategory) {
             throw new RuntimeException("资源分类不存在");
         }
-        // 更新分类资源总数
-        int count = null == resourceCategory.getCount() ? 0 : resourceCategory.getCount();
-        int addCount = 0;
-        if (null == resources.getId()) { // 新增
-            addCount = null == resources.getCount() ? 0 : resources.getCount();
-        } else {
-            Resource resource = repository.findById(resources.getId()).orElseGet(Resource::new);
-            if (null == resource.getId()) {
-                throw new RuntimeException("资源不存在");
-            }
-            int oldCount = null == resource.getCount() ? 0 : resource.getCount();
-            int newCount = null == resources.getCount() ? 0 : resources.getCount();
-            addCount = newCount - oldCount;
-        }
-        if (0 != addCount) {
+
+        if (null == resources.getId()) {
+            // 资源新增
+            // 更新分类资源总数
+            int count = null == resourceCategory.getCount() ? 0 : resourceCategory.getCount();
+            int addCount = null == resources.getCount() ? 0 : resources.getCount();
             resourceCategory.setCount(count + addCount);
             resourceCategoryRepository.save(resourceCategory);
+            return;
         }
+
+        // 原始资源
+        Resource oldResource = repository.findById(resources.getId()).orElseGet(Resource::new);
+        if (null == oldResource.getId()) {
+            throw new RuntimeException("资源不存在");
+        }
+
+        if (null != oldResource.getResourceCategory() && null != oldResource.getResourceCategory().getId()) {
+            // 原始资源设置了资源分类
+            // 查询原始资源分类
+            ResourceCategory oldResourceCategory =
+                    resourceCategoryRepository.findById(oldResource.getResourceCategory().getId()).orElseGet(ResourceCategory::new);
+            if (null == oldResourceCategory.getId()) {
+                throw new RuntimeException("资源分类不存在");
+            }
+            if (!Objects.equals(resourceCategory.getId(), oldResourceCategory.getId())) {
+                // 资源分类修改了
+                // 更新原类型总数
+                int oldCategoryCount = oldResourceCategory.getCount() != null ? oldResourceCategory.getCount() : 0;
+                int oldResourceCount = oldResource.getCount() != null ? oldResource.getCount() : 0;
+                oldResourceCategory.setCount(oldCategoryCount - oldResourceCount);
+                resourceCategoryRepository.save(oldResourceCategory);
+
+                // 更新新类型总数
+                int categoryCount = resourceCategory.getCount() != null ? resourceCategory.getCount() : 0;
+                int resourceCount = resources.getCount() != null ? resources.getCount() : 0;
+                resourceCategory.setCount(categoryCount + resourceCount);
+                resourceCategoryRepository.save(resourceCategory);
+                return;
+            }
+        }
+
+        int oldCount = oldResource.getCount() != null ? oldResource.getCount() : 0;
+        int count = resources.getCount() != null ? resources.getCount() : 0;
+        int categoryCount = resourceCategory.getCount() != null ? resourceCategory.getCount() : 0;
+
+        resourceCategory.setCount(categoryCount + (count - oldCount));
+        resourceCategoryRepository.save(resourceCategory);
     }
 
     @Transactional(rollbackFor = Exception.class)

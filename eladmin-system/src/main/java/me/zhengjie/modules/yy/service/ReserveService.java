@@ -16,6 +16,15 @@ import java.util.Map;
 public interface ReserveService {
 
     /**
+     * 查询医院一段时间内每日套餐预约次数汇总
+     * @param deptId .
+     * @param date .
+     * @param days .
+     * @return
+     */
+    List<Map<String, Object>> queryTermCount(Long deptId, String date, int days);
+
+    /**
      * 自动取消
      */
     void automaticCancel();
@@ -82,14 +91,14 @@ public interface ReserveService {
      *
      * @param resources /
      */
-    ReserveDto verify(Reserve resources);
+    ReserveDto verify(Reserve resources) throws Exception;
 
     /**
      * 取消
      *
      * @param resources /
      */
-    ReserveDto cancel(Reserve resources);
+    ReserveDto cancel(Reserve resources) throws Exception;
 
     /**
      * 签到

@@ -82,6 +82,12 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
+    public List<UserDto> findByDeptId(Long deptId) {
+        List<User> list = userRepository.findByDeptIdAndEnabledTrue(deptId);
+        return userMapper.toDto(list);
+    }
+
+    @Override
     @Transactional(rollbackFor = Exception.class)
     public void create(User resources) {
         if (userRepository.findByUsername(resources.getUsername()) != null) {
