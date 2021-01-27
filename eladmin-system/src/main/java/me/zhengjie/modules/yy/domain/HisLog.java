@@ -6,6 +6,7 @@ import com.alibaba.fastjson.annotation.JSONField;
 import io.swagger.annotations.ApiModelProperty;
 import lombok.Getter;
 import lombok.Setter;
+import me.zhengjie.modules.system.domain.Dept;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 import org.springframework.data.annotation.CreatedBy;
@@ -14,56 +15,66 @@ import org.springframework.data.annotation.LastModifiedBy;
 import javax.persistence.*;
 import java.io.Serializable;
 import java.sql.Timestamp;
+import java.util.Date;
 
 /**
  * @author yanjun
- * @date 2020-12-24 13:56
+ * @date 2020-12-24 12:51
  */
 @Entity
-@Table(name = "yy_patient_term")
+@Table(name = "yy_his_log")
 @Getter
 @Setter
-public class PatientTerm implements Serializable {
+public class HisLog implements Serializable {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
     @Column(name = "pat_item_id")
-    private String patItemId;
+    private Long patItemId;
 
-    @JSONField(serialize = false)
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "pid")
-    private PatientTerm parent;
+    @Column(name = "visit_id")
+    private Long visitId;
 
-    @JSONField(serialize = false)
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "patient_id")
-    private Patient patient;
+    @Column(name = "patient_id")
+    private Long patientId;
 
-    private String termCode;
+    @Column(name = "name")
+    private String name;
 
-    private String termName;
+    @Column(name = "mobile_phone")
+    private String mobilePhone;
 
-    private Long termPrice;
+    @Column(name = "mrn")
+    private String mrn;
 
-    private Long termOriginalPrice;
+    @Column(name = "visit_dept")
+    private String visitDept;
 
-    private Integer termTimes;
+    @Column(name = "visit_date")
+    private Timestamp visitDate;
 
-    private String termUnit;
+    @Column(name = "item_code")
+    private String itemCode;
 
+    @Column(name = "item_name")
+    private String itemName;
+
+    @Column(name = "price")
     private Long price;
 
-    private Integer times;
+    @Column(name = "amount")
+    private Long amount;
 
-    @Column(name = "free_times")
-    private Integer freeTimes;
+    @Column(name = "unit")
+    private String unit;
 
-    private String status;
+    @Column(name = "costs")
+    private Long costs;
 
-    private String remark;
+    @Column(name = "actual_costs")
+    private Long actualCosts;
 
     @CreatedBy
     @Column(name = "create_by", updatable = false)
@@ -85,7 +96,9 @@ public class PatientTerm implements Serializable {
     @ApiModelProperty(value = "更新时间", hidden = true)
     private Timestamp updateTime;
 
-    public void copy(PatientTerm source) {
+    private String remark;
+
+    public void copy(HisLog source) {
         BeanUtil.copyProperties(source, this, CopyOptions.create().setIgnoreNullValue(true));
     }
 

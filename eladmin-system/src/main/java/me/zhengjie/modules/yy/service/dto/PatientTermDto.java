@@ -16,6 +16,8 @@ public class PatientTermDto implements Serializable {
 
     private Long id;
 
+    private String patItemId;
+
     private PatientTermDto parent;
 
     private PatientDto patient;

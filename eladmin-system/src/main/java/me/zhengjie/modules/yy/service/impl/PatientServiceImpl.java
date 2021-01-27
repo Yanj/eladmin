@@ -13,6 +13,7 @@ import me.zhengjie.modules.yy.domain.Term;
 import me.zhengjie.modules.yy.repository.PatientRepository;
 import me.zhengjie.modules.yy.repository.PatientTermRepository;
 import me.zhengjie.modules.yy.repository.TermRepository;
+import me.zhengjie.modules.yy.service.HisLogService;
 import me.zhengjie.modules.yy.service.HospitalService;
 import me.zhengjie.modules.yy.service.PatientColService;
 import me.zhengjie.modules.yy.service.PatientService;
@@ -52,6 +53,8 @@ public class PatientServiceImpl implements PatientService {
     private final PatientColService patientColService;
 
     private final HisService hisService;
+
+    private final HisLogService hisLogService;
 
     @Override
     public Map<String, Object> querySync(PatientCriteria criteria, Pageable pageable) {
@@ -114,6 +117,9 @@ public class PatientServiceImpl implements PatientService {
             throw new RuntimeException("查询 HIS 无数据");
         }
 
+        // 保存查询日志
+        hisLogService.create(ckItemList);
+
         // 不存在的套餐
         Map<String, Object> noExistMap = new HashMap<>();
 
@@ -147,11 +153,13 @@ public class PatientServiceImpl implements PatientService {
         // ... 过滤数据
         Map<String, PatientTerm> patientTermMap = new HashMap<>();
         for (HisCkItemDto ckItem : ckItemList) {
-            if (patientTermMap.containsKey(ckItem.getItemCode())) {
+            String patItemId = ckItem.getPatItemId().toString();
+            if (patientTermMap.containsKey(patItemId)) {
                 continue;
             }
 
             PatientTerm patientTerm = new PatientTerm();
+            patientTerm.setPatItemId(patItemId);
             patientTerm.setPatient(patientMap.get(ckItem.getPatientId().toString()));
             patientTerm.setTermCode(ckItem.getItemCode());
             patientTerm.setPrice(ckItem.getActualCosts());
@@ -174,13 +182,13 @@ public class PatientServiceImpl implements PatientService {
                 patientTerm.setTermTimes(term.getTimes());
                 patientTerm.setTermUnit(term.getUnit());
             }
-            patientTermMap.put(ckItem.getItemCode(), patientTerm);
+            patientTermMap.put(patItemId, patientTerm);
         }
         // .. 更新数据库
-        for (String termCode : patientTermMap.keySet()) {
-            PatientTerm patientTerm = patientTermRepository.findByTermCode(termCode);
+        for (String patItemId : patientTermMap.keySet()) {
+            PatientTerm patientTerm = patientTermRepository.findByPatItemId(patItemId);
             if (null == patientTerm) {
-                patientTermRepository.save(patientTermMap.get(termCode));
+                patientTermRepository.save(patientTermMap.get(patItemId));
             }
         }
 

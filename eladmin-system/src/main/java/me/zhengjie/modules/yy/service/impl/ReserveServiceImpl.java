@@ -59,6 +59,7 @@ public class ReserveServiceImpl implements ReserveService {
 
     private final SmsChannelService smsChannelService;
 
+    @Override
     public List<Map<String, Object>> queryTermCount(Long deptId, String _date, int days) {
         if (null == deptId) {
             throw new RuntimeException("部门ID不能为空");
@@ -251,6 +252,68 @@ public class ReserveServiceImpl implements ReserveService {
     @Transactional(rollbackFor = Exception.class)
     @Override
     public ReserveDto create(Reserve resources) throws Exception {
+        return create(resources, true);
+    }
+
+    @Transactional(rollbackFor = Exception.class)
+    @Override
+    public List<ReserveDto> create(Reserve[] resources) throws Exception {
+        List<ReserveDto> res = new ArrayList<>();
+        for (Reserve reserve : resources) {
+            res.add(create(reserve, false));
+        }
+
+        if (res.size() == 0) {
+            return res;
+        }
+
+        // 寻找时间段
+        String minDate = null;
+        String maxDate = null;
+        String minBeginTime = null;
+        String maxEndTime = null;
+        for (ReserveDto reserve : res) {
+            if (null == minDate || minDate.compareTo(reserve.getDate()) > 0) {
+                minDate = reserve.getDate();
+            }
+            if (null == maxDate || maxDate.compareTo(reserve.getDate()) < 0) {
+                maxDate = reserve.getDate();
+            }
+        }
+        for (ReserveDto reserve : res) {
+            if (minDate.equals(reserve.getDate()) && (null == minBeginTime || minBeginTime.compareTo(reserve.getBeginTime()) > 0)) {
+                minBeginTime = reserve.getBeginTime();
+            }
+            if (maxDate.equals(reserve.getDate()) && (null == maxEndTime || maxEndTime.compareTo(reserve.getEndTime()) < 0)) {
+                maxEndTime = reserve.getEndTime();
+            }
+        }
+
+        ReserveDto reserve = res.get(0);
+        PatientDto patient = reserve.getPatient();
+
+        // 发送短信
+        Sms sms = new Sms();
+        sms.setBusType("reserves");
+        sms.setBusId(reserve.getId());
+        sms.setMobile(patient.getPhone());
+        String content = String.format(
+                "尊敬的%s女士您好！您已预约了%s %s-%s %s，如若因故未能按时到院就诊，请提前电话取消预约028-65311659， 感谢您的配合！ 地址：成都市青羊区包家巷77号.退订回T",
+                patient.getName(), minDate, minBeginTime, maxDate, maxEndTime);
+        sms.setContent(content);
+
+        // 发送短信
+        SmsVo smsVo = new SmsVo(sms.getMobile(), sms.getContent());
+        String sendSmsResult = smsChannelService.sendSms(smsVo);
+        sms.setStatus(sendSmsResult);
+
+        smsRepository.save(sms);
+
+        return res;
+    }
+
+    @Transactional(rollbackFor = Exception.class)
+    public ReserveDto create(Reserve resources, boolean needSms) throws Exception {
         // 判断部门
         if (null == resources.getDept() || null == resources.getDept().getId()) {
             throw new RuntimeException("部门不能为空");
@@ -364,7 +427,7 @@ public class ReserveServiceImpl implements ReserveService {
         }
 
         // 发送短信
-        if (!StringUtils.isEmpty(patient.getPhone())) {
+        if (needSms && !StringUtils.isEmpty(patient.getPhone())) {
             Sms sms = new Sms();
             sms.setBusType("reserve");
             sms.setBusId(reserve.getId());
@@ -394,16 +457,6 @@ public class ReserveServiceImpl implements ReserveService {
         patientTermLogRepository.save(patientTermLog);
 
         return mapper.toDto(reserve);
-    }
-
-    @Transactional(rollbackFor = Exception.class)
-    @Override
-    public List<ReserveDto> create(Reserve[] resources) throws Exception {
-        List<ReserveDto> res = new ArrayList<>();
-        for (Reserve reserve : resources) {
-            res.add(create(reserve));
-        }
-        return res;
     }
 
     @Transactional

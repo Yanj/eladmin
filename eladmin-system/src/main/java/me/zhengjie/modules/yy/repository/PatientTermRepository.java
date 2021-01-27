@@ -20,4 +20,11 @@ public interface PatientTermRepository extends JpaRepository<PatientTerm, Long>,
 
     PatientTerm findByTermCode(String termCode);
 
+    /**
+     * 根据购买ID查询
+     * @param patItemId .
+     * @return .
+     */
+    PatientTerm findByPatItemId(String patItemId);
+
 }
