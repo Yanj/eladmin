@@ -33,6 +33,10 @@ import me.zhengjie.modules.security.security.TokenProvider;
 import me.zhengjie.modules.security.service.dto.AuthUserDto;
 import me.zhengjie.modules.security.service.dto.JwtUserDto;
 import me.zhengjie.modules.security.service.OnlineUserService;
+import me.zhengjie.modules.system.domain.Dept;
+import me.zhengjie.modules.system.service.DeptService;
+import me.zhengjie.modules.system.service.dto.DeptDto;
+import me.zhengjie.modules.system.service.dto.DeptQueryCriteria;
 import me.zhengjie.utils.RsaUtils;
 import me.zhengjie.utils.RedisUtils;
 import me.zhengjie.utils.SecurityUtils;
@@ -47,7 +51,9 @@ import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
@@ -67,6 +73,7 @@ public class AuthorizationController {
     private final OnlineUserService onlineUserService;
     private final TokenProvider tokenProvider;
     private final AuthenticationManagerBuilder authenticationManagerBuilder;
+    private final DeptService deptService;
     @Resource
     private LoginProperties loginProperties;
 
@@ -131,6 +138,19 @@ public class AuthorizationController {
             put("uuid", uuid);
         }};
         return ResponseEntity.ok(imgResult);
+    }
+
+    @ApiOperation("获取部门列表")
+    @AnonymousGetMapping(value="/depts")
+    public ResponseEntity<Object> getDepts() throws Exception {
+        // 查询父 ID
+        DeptQueryCriteria criteria = new DeptQueryCriteria();
+        criteria.setPidIsNull(true);
+        List<DeptDto> list = deptService.queryAll(criteria, true);
+        if (null == list || list.isEmpty()) {
+            return ResponseEntity.ok(new ArrayList<>(0));
+        }
+        return ResponseEntity.ok(list);
     }
 
     @ApiOperation("退出登录")

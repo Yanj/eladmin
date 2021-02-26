@@ -108,6 +108,13 @@ public class DeptServiceImpl implements DeptService {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void create(Dept resources) {
+        if (resources.getPid() == null) { // 顶级部门
+            List<Dept> rootDeptList = deptRepository.findByPidIsNull();
+            if (rootDeptList != null && !rootDeptList.isEmpty()) {
+                throw new RuntimeException("顶级部门只能有 1 个");
+            }
+        }
+
         // 更新 level
         if (null != resources.getPid()) { // 有上级部门
             DeptDto parent = findById(resources.getPid());

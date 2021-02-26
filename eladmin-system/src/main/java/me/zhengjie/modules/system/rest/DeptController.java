@@ -54,6 +54,16 @@ public class DeptController {
         deptService.download(deptService.queryAll(criteria, false), response);
     }
 
+    @ApiOperation("查询根部门")
+    @GetMapping(value = "/root")
+    @PreAuthorize("@el.check('user:list','dept:list')")
+    public ResponseEntity<Object> queryRoot() throws Exception {
+        DeptQueryCriteria criteria = new DeptQueryCriteria();
+        criteria.setPidIsNull(true);
+        List<DeptDto> deptDtos = deptService.queryAll(criteria, true);
+        return ResponseEntity.ok(deptDtos);
+    }
+
     @ApiOperation("查询部门")
     @GetMapping
     @PreAuthorize("@el.check('user:list','dept:list')")
