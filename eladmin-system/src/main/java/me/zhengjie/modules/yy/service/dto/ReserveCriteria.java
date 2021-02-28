@@ -4,6 +4,7 @@ import lombok.Data;
 import me.zhengjie.annotation.Query;
 
 import java.io.Serializable;
+import java.util.Set;
 
 /**
  * @author yanjun
@@ -17,6 +18,12 @@ public class ReserveCriteria implements Serializable {
 
     @Query(joinName = "dept", propName = "id")
     private Long deptId;
+
+    @Query(type=Query.Type.IN, joinName = "dept", propName = "id")
+    private Set<Long> deptIds;
+
+    @Query
+    private String status;
 
     @Query
     private String date;
