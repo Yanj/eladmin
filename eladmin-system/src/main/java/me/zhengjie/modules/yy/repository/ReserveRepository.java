@@ -37,7 +37,7 @@ select term_id, `date`, count(1) from yy_reserve where dept_id = 32 and `date` >
                     "    dept_id = ?1 " +
                     "and status <> 'canceled' " +
                     "and `date` >= ?2 " +
-                    "and `date` <= ?3 " +
+                    "and `date` < ?3 " +
                     "group by term_id, `date`;" +
                     "",
             nativeQuery = true

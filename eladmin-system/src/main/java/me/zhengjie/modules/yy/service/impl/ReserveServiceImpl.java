@@ -125,32 +125,32 @@ public class ReserveServiceImpl implements ReserveService {
 
     @Override
     public Map<String, Object> queryAll(ReserveCriteria criteria, Pageable pageable) {
-        if (criteria.getDeptId() != null) {
-            JwtUserDto user = (JwtUserDto) SecurityUtils.getCurrentUser();
-            DeptDto dept;
-            // 只有管理员才允许切换不同的部门进行查询, 其余用户则只允许查询用户所属部门. 换句话说就是用户不能属于总部
-            // 如果当前用户是管理员
-            if (user.getUser().getIsAdmin()) {
-                // 查询要查询的部门级别
-                dept = deptService.findById(criteria.getDeptId());
-            } else {
-                // 查询当前用户的部门级别
-                dept = deptService.findById(user.getUser().getDept().getId());
-            }
-            // 如果部门级别大于等于2, 也就是子部门
-            if (dept.getLevel() >= 2) {
-                // 仅查询当前部门
-                criteria.setDeptId(dept.getId());
-            }
-            // 否则查询医院和子部门数据
-            else {
-                List<Dept> queryList = new ArrayList<>(1);
-                queryList.add(deptMapper.toEntity(dept));
-                List<Long> deptIds = deptService.getDeptChildren(queryList);
-                criteria.setDeptId(null);
-                criteria.setDeptIds(new HashSet<>(deptIds));
-            }
-        }
+//        if (criteria.getDeptId() != null) {
+//            JwtUserDto user = (JwtUserDto) SecurityUtils.getCurrentUser();
+//            DeptDto dept;
+//            // 只有管理员才允许切换不同的部门进行查询, 其余用户则只允许查询用户所属部门. 换句话说就是用户不能属于总部
+//            // 如果当前用户是管理员
+//            if (user.getUser().getIsAdmin()) {
+//                // 查询要查询的部门级别
+//                dept = deptService.findById(criteria.getDeptId());
+//            } else {
+//                // 查询当前用户的部门级别
+//                dept = deptService.findById(user.getUser().getDept().getId());
+//            }
+//            // 如果部门级别大于等于2, 也就是子部门
+//            if (dept.getLevel() >= 2) {
+//                // 仅查询当前部门
+//                criteria.setDeptId(dept.getId());
+//            }
+//            // 否则查询医院和子部门数据
+//            else {
+//                List<Dept> queryList = new ArrayList<>(1);
+//                queryList.add(deptMapper.toEntity(dept));
+//                List<Long> deptIds = deptService.getDeptChildren(queryList);
+//                criteria.setDeptId(null);
+//                criteria.setDeptIds(new HashSet<>(deptIds));
+//            }
+//        }
 
         Page<Reserve> page = repository.findAll((root, criteriaQuery, criteriaBuilder) -> QueryHelp.getPredicate(root, criteria, criteriaBuilder), pageable);
         return PageUtil.toPage(page.map(mapper::toDto));
