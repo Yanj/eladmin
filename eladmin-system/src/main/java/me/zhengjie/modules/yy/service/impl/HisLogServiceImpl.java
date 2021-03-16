@@ -49,7 +49,7 @@ public class HisLogServiceImpl implements HisLogService {
             log.setName(item.getName());
             log.setMobilePhone(item.getMobilePhone());
             if (null != item.getMrn()) {
-                log.setMrn(item.getMrn().toString());
+                log.setMrn(item.getMrn());
             }
             log.setVisitDept(item.getVisitDept());
             if (null != item.getVisitDate()) {

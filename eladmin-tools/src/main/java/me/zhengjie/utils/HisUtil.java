@@ -80,7 +80,7 @@ public class HisUtil {
             info.setPatientId(getItemLong(item, "PatientId"));
             info.setName(getItemText(item, "Name"));
             info.setMobilePhone(getItemText(item, "MobliePhone"));
-            info.setMrn(getItemLong(item, "MRN"));
+            info.setMrn(getItemText(item, "MRN"));
             info.setVisitDept(getItemText(item, "VisitDept"));
             info.setVisitDate(getItemDate(item, "VisitDate"));
             info.setItemCode(getItemText(item, "ItemCode"));

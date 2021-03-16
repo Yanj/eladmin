@@ -134,7 +134,7 @@ public class PatientServiceImpl implements PatientService {
             patient.setCode(ckItem.getPatientId().toString());
             patient.setName(ckItem.getName());
             patient.setPhone(ckItem.getMobilePhone());
-            patient.setMrn(ckItem.getMrn().toString());
+            patient.setMrn(ckItem.getMrn());
             patientMap.put(ckItem.getPatientId().toString(), patient);
         }
         // ... 更新数据库

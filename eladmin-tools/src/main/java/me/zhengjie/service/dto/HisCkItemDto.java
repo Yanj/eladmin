@@ -32,7 +32,7 @@ public class HisCkItemDto implements Serializable {
     private String mobilePhone;
 
     // 患者病案号
-    private Long mrn;
+    private String mrn;
 
     // 就诊科室
     private String visitDept;
