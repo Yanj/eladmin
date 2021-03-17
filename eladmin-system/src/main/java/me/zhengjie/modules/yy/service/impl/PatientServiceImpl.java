@@ -179,7 +179,10 @@ public class PatientServiceImpl implements PatientService {
                 patientTerm.setTermName(term.getName());
                 patientTerm.setTermPrice(term.getPrice());
                 patientTerm.setTermOriginalPrice(term.getOriginalPrice());
-                patientTerm.setTermTimes(term.getTimes());
+                // 修改: 从 HIS 记录中取套餐次数
+//                patientTerm.setTermTimes(term.getTimes());
+                patientTerm.setTermTimes(ckItem.getAmount().intValue());
+                // === end 修改: 从 HIS 记录中取套餐次数
                 patientTerm.setTermUnit(term.getUnit());
             }
             patientTermMap.put(patItemId, patientTerm);
