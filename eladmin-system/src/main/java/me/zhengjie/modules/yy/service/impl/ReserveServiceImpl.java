@@ -31,6 +31,7 @@ import org.springframework.transaction.annotation.Transactional;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.math.BigInteger;
+import java.sql.Timestamp;
 import java.time.LocalDateTime;
 import java.util.*;
 
@@ -341,6 +342,7 @@ public class ReserveServiceImpl implements ReserveService {
         SmsVo smsVo = new SmsVo(sms.getMobile(), sms.getContent());
         String sendSmsResult = smsChannelService.sendSms(smsVo);
         sms.setStatus(sendSmsResult);
+        sms.setSendTime(Timestamp.valueOf(LocalDateTime.now()));
 
         smsRepository.save(sms);
 
@@ -478,6 +480,7 @@ public class ReserveServiceImpl implements ReserveService {
             SmsVo smsVo = new SmsVo(sms.getMobile(), sms.getContent());
             String res = smsChannelService.sendSms(smsVo);
             sms.setStatus(res);
+            sms.setSendTime(Timestamp.valueOf(LocalDateTime.now()));
 
             smsRepository.save(sms);
         }
@@ -581,6 +584,7 @@ public class ReserveServiceImpl implements ReserveService {
             SmsVo smsVo = new SmsVo(sms.getMobile(), sms.getContent());
             String res = smsChannelService.sendSms(smsVo);
             sms.setStatus(res);
+            sms.setSendTime(Timestamp.valueOf(LocalDateTime.now()));
 
             smsRepository.save(sms);
         }
@@ -679,6 +683,7 @@ public class ReserveServiceImpl implements ReserveService {
             SmsVo smsVo = new SmsVo(sms.getMobile(), sms.getContent());
             String res = smsChannelService.sendSms(smsVo);
             sms.setStatus(res);
+            sms.setSendTime(Timestamp.valueOf(LocalDateTime.now()));
 
             smsRepository.save(sms);
         }
@@ -748,6 +753,7 @@ public class ReserveServiceImpl implements ReserveService {
 //                    patientTerm.getTermName(), reserve.getDate(), reserve.getBeginTime(), reserve.getDept().getName());
 //            sms.setContent(content);
 //            sms.setStatus("init");
+//            sms.setSendTime(Timestamp.valueOf(LocalDateTime.now()));
 //            smsRepository.save(sms);
 //        }
 

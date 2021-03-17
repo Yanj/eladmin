@@ -128,7 +128,7 @@ his:
 
 # sms
 sms:
-  enable: false
+  enable: ${SMS_ENABLE:false}
   channel:
     host: sdk2.028lk.com
     server: https://sdk2.028lk.com/sdk2/
