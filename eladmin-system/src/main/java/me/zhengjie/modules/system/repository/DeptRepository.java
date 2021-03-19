@@ -37,6 +37,15 @@ public interface DeptRepository extends JpaRepository<Dept, Long>, JpaSpecificat
     List<Dept> findByPid(Long id);
 
     /**
+     * 查询父部门
+     *
+     * @param id .
+     * @return .
+     */
+    @Query(value = "select b.* from sys_dept a inner join sys_dept b on a.pid = b.dept_id where a.dept_id = ?1", nativeQuery = true)
+    Dept findParent(Long id);
+
+    /**
      * 获取顶级部门
      * @return /
      */

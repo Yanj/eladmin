@@ -4,9 +4,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import me.zhengjie.domain.vo.SmsVo;
 import me.zhengjie.modules.security.service.dto.JwtUserDto;
-import me.zhengjie.modules.system.domain.Dept;
 import me.zhengjie.modules.system.service.DeptService;
-import me.zhengjie.modules.system.service.dto.DeptDto;
 import me.zhengjie.modules.system.service.dto.RoleSmallDto;
 import me.zhengjie.modules.system.service.mapstruct.DeptMapper;
 import me.zhengjie.modules.yy.domain.*;
@@ -23,8 +21,6 @@ import me.zhengjie.utils.*;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
-import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -80,7 +76,7 @@ public class ReserveServiceImpl implements ReserveService {
         String endDate = TimeUtil.getDate(_date, days);
 
         // 查询所有套餐
-        List<Term> termList = termRepository.findAllByDeptId(deptId);
+        List<Term> termList = termRepository.findAllByComId(deptId);
         // 查询套餐预约统计
         List<Map<String, Object>> termCountList = repository.queryTermCount(deptId, beginDate, endDate);
         // 日期范围
@@ -174,7 +170,7 @@ public class ReserveServiceImpl implements ReserveService {
         List<WorkTime> workTimeList = workTimeRepository.findAllByDeptIdOrderByBeginTime(criteria.getDeptId());
 
         // 查询套餐
-        List<Term> termList = termRepository.findAllByDeptId(criteria.getDeptId());
+        List<Term> termList = termRepository.findAllByComId(criteria.getDeptId());
 
         // 统计
         List<Map<String, Object>> countList;
@@ -251,7 +247,6 @@ public class ReserveServiceImpl implements ReserveService {
         }
         ResourceGroup resourceGroup = reserve.getResourceGroup();
 
-        final Long deptId = resourceGroup.getDept().getId();
         final Long groupId = resourceGroup.getId();
 
         ResourceGroupForReserveDto res = new ResourceGroupForReserveDto();
@@ -259,12 +254,12 @@ public class ReserveServiceImpl implements ReserveService {
         res.setName(resourceGroup.getName());
 
         // 查询分类列表
-        List<ResourceCategory> resourceCategoryList = resourceCategoryRepository.findAllByDeptIdAndGroupId(deptId, groupId);
+        List<ResourceCategory> resourceCategoryList = resourceCategoryRepository.findAllByGroupId(groupId);
         // 循环
         List<ResourceCategoryForReserveDto> dtoList = new ArrayList<>(resourceCategoryList.size());
         for (ResourceCategory resourceCategory : resourceCategoryList) {
             // 查询分类对应的资源列表
-            List<Resource> resourceList = resourceRepository.findAllByDeptIdAndResourceCategoryId(deptId, resourceCategory.getId());
+            List<Resource> resourceList = resourceRepository.findAllByResourceCategoryId(resourceCategory.getId());
 
             ResourceCategoryForReserveDto categoryDto = new ResourceCategoryForReserveDto();
             categoryDto.setId(resourceCategory.getId());
@@ -351,6 +346,10 @@ public class ReserveServiceImpl implements ReserveService {
 
     @Transactional(rollbackFor = Exception.class)
     public ReserveDto create(Reserve resources, boolean needSms) throws Exception {
+        JwtUserDto user = (JwtUserDto) SecurityUtils.getCurrentUser();
+        if (null == user) {
+            throw new RuntimeException("获取用户失败");
+        }
         // 判断部门
         if (null == resources.getDept() || null == resources.getDept().getId()) {
             throw new RuntimeException("部门不能为空");
@@ -398,7 +397,7 @@ public class ReserveServiceImpl implements ReserveService {
 
         // 获取套餐
         String code = patientTerm.getTermCode();
-        Term term = termRepository.findFirstByCode(code).orElseGet(Term::new);
+        Term term = termRepository.findByCode(user.getComId(), code).orElseGet(Term::new);
         if (null == term.getId()) {
             throw new RuntimeException("套餐不存在");
         }

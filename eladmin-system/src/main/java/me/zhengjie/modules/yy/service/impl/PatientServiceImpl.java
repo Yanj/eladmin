@@ -3,18 +3,12 @@ package me.zhengjie.modules.yy.service.impl;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import me.zhengjie.domain.vo.HisCkItemVo;
-import me.zhengjie.modules.system.domain.Dept;
-import me.zhengjie.modules.system.repository.DeptRepository;
-import me.zhengjie.modules.system.service.mapstruct.DeptMapper;
-import me.zhengjie.modules.yy.domain.Patient;
-import me.zhengjie.modules.yy.domain.PatientCol;
-import me.zhengjie.modules.yy.domain.PatientTerm;
-import me.zhengjie.modules.yy.domain.Term;
+import me.zhengjie.modules.security.service.dto.JwtUserDto;
+import me.zhengjie.modules.yy.domain.*;
 import me.zhengjie.modules.yy.repository.PatientRepository;
 import me.zhengjie.modules.yy.repository.PatientTermRepository;
 import me.zhengjie.modules.yy.repository.TermRepository;
 import me.zhengjie.modules.yy.service.HisLogService;
-import me.zhengjie.modules.yy.service.HospitalService;
 import me.zhengjie.modules.yy.service.PatientColService;
 import me.zhengjie.modules.yy.service.PatientService;
 import me.zhengjie.modules.yy.service.dto.PatientCriteria;
@@ -23,6 +17,7 @@ import me.zhengjie.modules.yy.service.mapstruct.PatientMapper;
 import me.zhengjie.service.HisService;
 import me.zhengjie.service.dto.HisCkItemDto;
 import me.zhengjie.utils.*;
+import me.zhengjie.utils.enums.YesNoEnum;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -47,50 +42,11 @@ public class PatientServiceImpl implements PatientService {
     private final TermRepository termRepository;
     private final PatientTermRepository patientTermRepository;
 
-    private final HospitalService hospitalService;
-    private final DeptMapper deptMapper;
-
     private final PatientColService patientColService;
 
     private final HisService hisService;
 
     private final HisLogService hisLogService;
-
-    @Override
-    public Map<String, Object> querySync(PatientCriteria criteria, Pageable pageable) {
-        if (StringUtils.isEmpty(criteria.getInfoType())) {
-            throw new IllegalArgumentException("infoType 不能为空");
-        }
-        if (StringUtils.isEmpty(criteria.getPatientInfo())) {
-            throw new IllegalArgumentException("patientInfo 不能为空");
-        }
-        try {
-            // 查询HIS系统
-            HisCkItemVo hisCkItemVo = new HisCkItemVo();
-            hisCkItemVo.setInfoType(HisCkInfoTypeEnum.valueOf(criteria.getInfoType()));
-            hisCkItemVo.setPatientInfo(criteria.getPatientInfo());
-            sync(hisCkItemVo);
-        } catch (Exception e) {
-            log.error("查询 HIS 失败", e);
-        }
-
-        // 设置查询条件
-        if ("mrn".equalsIgnoreCase(criteria.getInfoType())) {
-            criteria.setMrn(criteria.getPatientInfo());
-            criteria.setName(null);
-            criteria.setPhone(null);
-        } else if ("name".equalsIgnoreCase(criteria.getInfoType())) {
-            criteria.setMrn(null);
-            criteria.setName(criteria.getPatientInfo());
-            criteria.setPhone(null);
-        } else if ("phone".equalsIgnoreCase(criteria.getInfoType())) {
-            criteria.setMrn(null);
-            criteria.setName(null);
-            criteria.setPhone(criteria.getPatientInfo());
-        }
-
-        return queryAll(criteria, pageable);
-    }
 
     @Override
     public List<PatientDto> query(PatientCriteria criteria) {
@@ -117,6 +73,11 @@ public class PatientServiceImpl implements PatientService {
             throw new RuntimeException("查询 HIS 无数据");
         }
 
+        JwtUserDto user = (JwtUserDto) SecurityUtils.getCurrentUser();
+        if (null == user) {
+            throw new RuntimeException("获取用户失败");
+        }
+
         // 保存查询日志
         hisLogService.create(ckItemList);
 
@@ -131,6 +92,10 @@ public class PatientServiceImpl implements PatientService {
                 continue;
             }
             Patient patient = new Patient();
+            patient.setOrgId(user.getOrgId());
+            patient.setComId(user.getComId());
+            patient.setDeptId(user.getDeptId());
+            patient.setSource(PatientSourceEnum.HIS);
             patient.setCode(ckItem.getPatientId().toString());
             patient.setName(ckItem.getName());
             patient.setPhone(ckItem.getMobilePhone());
@@ -165,7 +130,7 @@ public class PatientServiceImpl implements PatientService {
             patientTerm.setPrice(ckItem.getActualCosts());
             patientTerm.setTimes(ckItem.getAmount().intValue());
 
-            Term term = termRepository.findFirstByCode(ckItem.getItemCode()).orElseGet(Term::new);
+            Term term = termRepository.findByCode(user.getComId(), ckItem.getItemCode()).orElseGet(Term::new);
             if (null == term.getId()) {
                 log.info("套餐不存在, 请配置");
                 noExistMap.put(ckItem.getItemCode(), ckItem.getItemName());
@@ -205,12 +170,22 @@ public class PatientServiceImpl implements PatientService {
 
     @Override
     public Map<String, Object> queryAll(PatientCriteria criteria, Pageable pageable) {
+        JwtUserDto user = (JwtUserDto) SecurityUtils.getCurrentUser();
+        criteria.setOrgId(user.getOrgId());
+        criteria.setComId(user.getComId());
+        criteria.setDeptId(user.getDeptId());
+        criteria.setStatus(YesNoEnum.YES);
         Page<Patient> page = repository.findAll((root, criteriaQuery, criteriaBuilder) -> QueryHelp.getPredicate(root, criteria, criteriaBuilder), pageable);
         return PageUtil.toPage(page.map(mapper::toDto));
     }
 
     @Override
     public List<PatientDto> queryAll(PatientCriteria criteria) {
+        JwtUserDto user = (JwtUserDto) SecurityUtils.getCurrentUser();
+        criteria.setOrgId(user.getOrgId());
+        criteria.setComId(user.getComId());
+        criteria.setDeptId(user.getDeptId());
+        criteria.setStatus(YesNoEnum.YES);
         return mapper.toDto(repository.findAll((root, criteriaQuery, criteriaBuilder) -> QueryHelp.getPredicate(root, criteria, criteriaBuilder)));
     }
 
@@ -225,6 +200,16 @@ public class PatientServiceImpl implements PatientService {
     @Transactional(rollbackFor = Exception.class)
     @Override
     public PatientDto create(Patient resources) {
+        JwtUserDto user = (JwtUserDto) SecurityUtils.getCurrentUser();
+        if (null == resources.getSource()) {
+            resources.setSource(PatientSourceEnum.HIS);
+        }
+        // 设置患者部门
+        resources.setOrgId(user.getOrgId());
+        resources.setComId(user.getComId());
+        resources.setDeptId(user.getDeptId());
+        // 设置患者状态
+        resources.setStatus(YesNoEnum.YES);
         return mapper.toDto(repository.save(resources));
     }
 
@@ -240,8 +225,14 @@ public class PatientServiceImpl implements PatientService {
     @Transactional(rollbackFor = Exception.class)
     @Override
     public void deleteAll(Long[] ids) {
+//        for (Long id : ids) {
+//            repository.deleteById(id);
+//        }
         for (Long id : ids) {
-            repository.deleteById(id);
+            Patient instance = repository.findById(id).orElseGet(Patient::new);
+            ValidationUtil.isNull(instance.getId(), "Patient", "id", id);
+            instance.setStatus(YesNoEnum.NO);
+            repository.save(instance);
         }
     }
 
@@ -250,7 +241,17 @@ public class PatientServiceImpl implements PatientService {
         List<Map<String, Object>> list = new ArrayList<>();
         for (PatientDto item : all) {
             Map<String, Object> map = new LinkedHashMap<>();
-            map.put("id", item.getId());
+            map.put("ID", item.getId());
+            map.put("来源", item.getSource());
+            map.put("外部系统ID", item.getCode());
+            map.put("档案号", item.getMrn());
+            map.put("姓名", item.getName());
+            map.put("电话", item.getPhone());
+            map.put("自定义1", item.getCol1());
+            map.put("自定义2", item.getCol2());
+            map.put("自定义3", item.getCol3());
+            map.put("自定义4", item.getCol4());
+            map.put("自定义5", item.getCol5());
             list.add(map);
         }
         FileUtil.downloadExcel(list, response);

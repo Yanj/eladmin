@@ -72,6 +72,13 @@ public interface DeptService {
     List<Dept> findByPid(long pid);
 
     /**
+     * 查询父部门
+     * @param id
+     * @return
+     */
+    DeptDto findParent(long id);
+
+    /**
      * 根据角色ID查询
      * @param id /
      * @return /

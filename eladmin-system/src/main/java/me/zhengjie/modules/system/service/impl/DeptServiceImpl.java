@@ -101,6 +101,11 @@ public class DeptServiceImpl implements DeptService {
     }
 
     @Override
+    public DeptDto findParent(long id) {
+        return deptMapper.toDto(deptRepository.findParent(id));
+    }
+
+    @Override
     public Set<Dept> findByRoleId(Long id) {
         return deptRepository.findByRoleId(id);
     }

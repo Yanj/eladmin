@@ -17,8 +17,14 @@ public interface ResourceCategoryRepository extends JpaRepository<ResourceCatego
 
     List<ResourceCategory> findAllByDeptId(Long deptId);
 
-    @Query("select rc from ResourceCategory rc left join fetch rc.resourceGroups rg where rg.id = ?2 and rc.dept.id = ?1")
-    List<ResourceCategory> findAllByDeptIdAndGroupId(Long deptId, Long groupId);
+    /**
+     * 根据资源分组查询所有下面所有资源分类
+     *
+     * @param groupId .
+     * @return .
+     */
+    @Query("select rc from ResourceCategory rc left join fetch rc.resourceGroups rg where rg.id = ?1 and rc.status = 1")
+    List<ResourceCategory> findAllByGroupId(Long groupId);
 
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("from ResourceCategory where id = ?1")

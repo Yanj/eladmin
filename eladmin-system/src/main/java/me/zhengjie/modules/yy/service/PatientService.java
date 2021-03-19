@@ -18,15 +18,6 @@ import java.util.Map;
 public interface PatientService {
 
     /**
-     * 查询数据分页
-     *
-     * @param criteria 条件
-     * @param pageable 分页参数
-     * @return Map<String, Object>
-     */
-    Map<String, Object> querySync(PatientCriteria criteria, Pageable pageable);
-
-    /**
      * 查询
      *
      * @param criteria .

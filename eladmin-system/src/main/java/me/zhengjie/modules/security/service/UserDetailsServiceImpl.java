@@ -21,8 +21,11 @@ import me.zhengjie.exception.EntityNotFoundException;
 import me.zhengjie.modules.security.config.bean.LoginProperties;
 import me.zhengjie.modules.security.service.dto.JwtUserDto;
 import me.zhengjie.modules.system.service.DataService;
+import me.zhengjie.modules.system.service.DeptService;
 import me.zhengjie.modules.system.service.RoleService;
 import me.zhengjie.modules.system.service.UserService;
+import me.zhengjie.modules.system.service.dto.DeptDto;
+import me.zhengjie.modules.system.service.dto.DeptSmallDto;
 import me.zhengjie.modules.system.service.dto.UserDto;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
@@ -42,6 +45,7 @@ public class UserDetailsServiceImpl implements UserDetailsService {
     private final UserService userService;
     private final RoleService roleService;
     private final DataService dataService;
+    private final DeptService deptService;
     private final LoginProperties loginProperties;
 
     public void setEnableCache(boolean enableCache) {
@@ -81,10 +85,38 @@ public class UserDetailsServiceImpl implements UserDetailsService {
                 if (!user.getEnabled()) {
                     throw new BadRequestException("账号未激活！");
                 }
+                if (null == user.getDept()) {
+                    throw new BadRequestException("账号部门未配置！");
+                }
+                DeptDto deptDto = deptService.findById(user.getDept().getId());
+                if (null == user.getDept()) {
+                    throw new BadRequestException("账号部门未配置！!");
+                }
+                if (null == deptDto.getLevel() || deptDto.getLevel() > 2 || deptDto.getLevel() < 0) {
+                    throw new BadRequestException("账号部门异常!");
+                }
+                DeptSmallDto org = null;
+                DeptSmallDto com = null;
+                DeptSmallDto dept = null;
+
+                if (deptDto.getLevel() == 2) { // 部门
+                    dept = new DeptSmallDto(deptDto);
+                    com = new DeptSmallDto(deptService.findParent(dept.getId()));
+                    org = new DeptSmallDto(deptService.findParent(com.getId()));
+                } else if (deptDto.getLevel() == 1) { // 公司
+                    com = new DeptSmallDto(deptDto);
+                    org = new DeptSmallDto(deptService.findParent(com.getId()));
+                } else if (deptDto.getLevel() == 0) { // 机构
+                    org = new DeptSmallDto(deptDto);
+                }
+
                 jwtUserDto = new JwtUserDto(
                         user,
                         dataService.getDeptIds(user),
-                        roleService.mapToGrantedAuthorities(user)
+                        roleService.mapToGrantedAuthorities(user),
+                        org,
+                        com,
+                        dept
                 );
                 userDtoCache.put(username, jwtUserDto);
             }

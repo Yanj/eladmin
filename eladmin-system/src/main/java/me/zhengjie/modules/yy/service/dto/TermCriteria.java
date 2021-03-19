@@ -15,7 +15,13 @@ public class TermCriteria implements Serializable {
     @Query
     private Long id;
 
-    @Query(joinName = "dept", propName = "id")
+    @Query
+    private Long orgId;
+
+    @Query
+    private Long comId;
+
+    @Query
     private Long deptId;
 
     @Query

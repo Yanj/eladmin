@@ -15,6 +15,9 @@
  */
 package me.zhengjie.base;
 
+import me.zhengjie.utils.enums.YesNoEnum;
+import org.mapstruct.ValueMapping;
+
 import java.util.List;
 
 /**
@@ -50,4 +53,27 @@ public interface BaseMapper<D, E> {
      * @return /
      */
     List <D> toDto(List<E> entityList);
+
+//    @ValueMapping(source = "NO", target = "0")
+//    @ValueMapping(source = "YES", target = "1")
+    default String map(YesNoEnum value) {
+        switch (value) {
+            case NO:
+                return "0";
+            case YES:
+                return "1";
+        }
+        return null;
+    }
+
+    default YesNoEnum map(String value) {
+        if ("0".equals(value)) {
+            return YesNoEnum.NO;
+        }
+        if ("1".equals(value)) {
+            return YesNoEnum.YES;
+        }
+        return null;
+    }
+
 }

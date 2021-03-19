@@ -15,7 +15,11 @@
  */
 package me.zhengjie.modules.system.service.dto;
 
+import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.NoArgsConstructor;
+import lombok.NonNull;
+
 import java.io.Serializable;
 
 /**
@@ -23,9 +27,17 @@ import java.io.Serializable;
 * @date 2019-6-10 16:32:18
 */
 @Data
+@AllArgsConstructor
+@NoArgsConstructor
 public class DeptSmallDto implements Serializable {
 
     private Long id;
 
     private String name;
+
+    public DeptSmallDto(@NonNull DeptDto dept) {
+        this.id = dept.getId();
+        this.name = dept.getName();
+    }
+
 }

@@ -18,6 +18,7 @@ package me.zhengjie.modules.security.service.dto;
 import com.alibaba.fastjson.annotation.JSONField;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
+import me.zhengjie.modules.system.service.dto.DeptSmallDto;
 import me.zhengjie.modules.system.service.dto.UserDto;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -40,8 +41,38 @@ public class JwtUserDto implements UserDetails {
     @JSONField(serialize = false)
     private final List<GrantedAuthority> authorities;
 
+    // 所属组织
+    private final DeptSmallDto org;
+
+    // 所属公司
+    private final DeptSmallDto com;
+
+    // 所属部门
+    private final DeptSmallDto dept;
+
     public Set<String> getRoles() {
         return authorities.stream().map(GrantedAuthority::getAuthority).collect(Collectors.toSet());
+    }
+
+    public Long getOrgId() {
+        if (null != org) {
+            return org.getId();
+        }
+        return null;
+    }
+
+    public Long getComId() {
+        if (null != com) {
+            return com.getId();
+        }
+        return null;
+    }
+
+    public Long getDeptId() {
+        if (null != dept) {
+            return dept.getId();
+        }
+        return null;
     }
 
     @Override

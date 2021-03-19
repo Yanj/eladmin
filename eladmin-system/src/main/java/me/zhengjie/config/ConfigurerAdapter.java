@@ -18,8 +18,11 @@ package me.zhengjie.config;
 import com.alibaba.fastjson.serializer.SerializerFeature;
 import com.alibaba.fastjson.support.config.FastJsonConfig;
 import com.alibaba.fastjson.support.spring.FastJsonHttpMessageConverter;
+import me.zhengjie.utils.enums.YesNoEnum;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.convert.converter.Converter;
+import org.springframework.format.FormatterRegistry;
 import org.springframework.http.MediaType;
 import org.springframework.http.converter.HttpMessageConverter;
 import org.springframework.web.cors.CorsConfiguration;
@@ -84,5 +87,21 @@ public class ConfigurerAdapter implements WebMvcConfigurer {
         converter.setSupportedMediaTypes(supportMediaTypeList);
         converter.setDefaultCharset(StandardCharsets.UTF_8);
         converters.add(converter);
+    }
+
+    @Override
+    public void addFormatters(FormatterRegistry registry) {
+        registry.addConverter(new Converter<String, YesNoEnum>() {
+            @Override
+            public YesNoEnum convert(String s) {
+                if ("0".equals(s)) {
+                    return YesNoEnum.NO;
+                }
+                if ("1".equals(s)) {
+                    return YesNoEnum.YES;
+                }
+                return null;
+            }
+        });
     }
 }

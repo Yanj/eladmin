@@ -2,6 +2,7 @@ package me.zhengjie.modules.yy.service.dto;
 
 import lombok.Data;
 import me.zhengjie.annotation.Query;
+import me.zhengjie.utils.enums.YesNoEnum;
 
 import java.io.Serializable;
 
@@ -15,6 +16,15 @@ public class PatientCriteria implements Serializable {
     @Query
     private Long id;
 
+    @Query
+    private Long orgId;
+
+    @Query
+    private Long comId;
+
+    @Query
+    private Long deptId;
+
     @Query(blurry = "mrn,name,phone")
     private String blurry;
 
@@ -26,6 +36,9 @@ public class PatientCriteria implements Serializable {
 
     @Query
     private String phone;
+
+    @Query
+    private YesNoEnum status;
 
     private String infoType;
 

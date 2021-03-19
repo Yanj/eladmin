@@ -18,7 +18,11 @@ public class ResourceCategoryDto implements Serializable {
 
     private Long id;
 
-    private DeptSmallDto dept;
+    private Long orgId;
+
+    private Long comId;
+
+    private Long deptId;
 
     private String name;
 
