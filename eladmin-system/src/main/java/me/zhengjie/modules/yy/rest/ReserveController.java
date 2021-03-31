@@ -9,6 +9,7 @@ import me.zhengjie.modules.yy.domain.Reserve;
 import me.zhengjie.modules.yy.service.ReserveService;
 import me.zhengjie.modules.yy.service.dto.ReserveCountCriteria;
 import me.zhengjie.modules.yy.service.dto.ReserveCriteria;
+import me.zhengjie.modules.yy.service.dto.UserReserveCountCriteria;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -60,6 +61,14 @@ public class ReserveController {
     @AnonymousAccess
     public ResponseEntity<Object> queryWorkTimeCount(@RequestParam("deptId") Long deptId) {
         return new ResponseEntity<>(reserveService.queryTodayCountGroupByWorkTime(deptId), HttpStatus.OK);
+    }
+
+    @Log("查询工作量统计")
+    @ApiOperation("查询工作量统计")
+    @GetMapping("/userWorkCount")
+    @AnonymousAccess
+    public ResponseEntity<Object> queryUserWorkCount(UserReserveCountCriteria criteria) {
+        return new ResponseEntity<>(reserveService.queryUserReserveCount(criteria), HttpStatus.OK);
     }
 
     @Log("查询预约")

@@ -1,6 +1,7 @@
 package me.zhengjie.modules.yy.service;
 
 import me.zhengjie.modules.yy.domain.Reserve;
+import me.zhengjie.modules.yy.domain.UserReserveCount;
 import me.zhengjie.modules.yy.service.dto.*;
 import org.springframework.data.domain.Pageable;
 
@@ -19,8 +20,8 @@ public interface ReserveService {
      * 查询医院一段时间内每日套餐预约次数汇总
      *
      * @param comId .
-     * @param date .
-     * @param days .
+     * @param date  .
+     * @param days  .
      * @return
      */
     List<Map<String, Object>> queryTermCount(Long comId, String date, int days);
@@ -29,6 +30,14 @@ public interface ReserveService {
      * 自动取消
      */
     void automaticCancel();
+
+    /**
+     * 查询用户工作量
+     *
+     * @param criteria     .
+     * @return .
+     */
+    List<UserReserveCount> queryUserReserveCount(UserReserveCountCriteria criteria);
 
     /**
      * 查询数据分页

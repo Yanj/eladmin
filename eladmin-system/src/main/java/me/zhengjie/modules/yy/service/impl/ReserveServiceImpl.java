@@ -145,6 +145,28 @@ public class ReserveServiceImpl implements ReserveService {
     }
 
     @Override
+    public List<UserReserveCount> queryUserReserveCount(UserReserveCountCriteria criteria) {
+        Long comId = criteria.getComId();
+        String beginDate = criteria.getBeginDate();
+        String endDate = criteria.getEndDate();
+
+        JwtUserDto user = (JwtUserDto) SecurityUtils.getCurrentUser();
+        if (!user.isAdmin()) {
+            comId = user.getComId();
+        }
+        if (null == comId) {
+            throw new BadRequestException("comId 不能为空");
+        }
+        if (StringUtils.isEmpty(beginDate)) {
+            beginDate = TimeUtil.getCurrentDate();
+        }
+        if (StringUtils.isEmpty(endDate)) {
+            endDate = TimeUtil.getCurrentDate();
+        }
+        return repository.queryUserReserveCount(comId, beginDate, endDate);
+    }
+
+    @Override
     public Map<String, Object> queryAll(ReserveCriteria criteria, Pageable pageable) {
         JwtUserDto user = (JwtUserDto) SecurityUtils.getCurrentUser();
         criteria.setUser(user);

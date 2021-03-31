@@ -5,14 +5,12 @@ import me.zhengjie.exception.BadRequestException;
 import me.zhengjie.modules.security.service.dto.JwtUserDto;
 import me.zhengjie.modules.system.service.DeptService;
 import me.zhengjie.modules.yy.domain.PatientTerm;
+import me.zhengjie.modules.yy.domain.PatientTermTimesCount;
 import me.zhengjie.modules.yy.domain.PatientTermType;
 import me.zhengjie.modules.yy.repository.PatientTermRepository;
 import me.zhengjie.modules.yy.service.PatientTermService;
 import me.zhengjie.modules.yy.service.TermService;
-import me.zhengjie.modules.yy.service.dto.PatientTermCriteria;
-import me.zhengjie.modules.yy.service.dto.PatientTermDto;
-import me.zhengjie.modules.yy.service.dto.TermCriteria;
-import me.zhengjie.modules.yy.service.dto.TermDto;
+import me.zhengjie.modules.yy.service.dto.*;
 import me.zhengjie.modules.yy.service.mapstruct.PatientTermMapper;
 import me.zhengjie.utils.*;
 import me.zhengjie.utils.enums.YesNoEnum;
@@ -41,6 +39,19 @@ public class PatientTermServiceImpl implements PatientTermService {
 
     private final TermService termService;
     private final DeptService deptService;
+
+    @Override
+    public List<PatientTermTimesCount> queryPatientTermTimesCount(PatientTermTimesCountCriteria criteria) {
+        Long comId = criteria.getComId();
+        JwtUserDto user = (JwtUserDto) SecurityUtils.getCurrentUser();
+        if (!user.isAdmin()) {
+            comId = user.getComId();
+        }
+        if (comId == null) {
+            throw new BadRequestException("comId不能为空");
+        }
+        return repository.queryPatientTermTimesCount(comId);
+    }
 
     @Override
     public Map<String, Object> queryAll(PatientTermCriteria criteria, Pageable pageable) {

@@ -8,6 +8,7 @@ import me.zhengjie.annotation.Log;
 import me.zhengjie.modules.yy.domain.PatientTerm;
 import me.zhengjie.modules.yy.service.PatientTermService;
 import me.zhengjie.modules.yy.service.dto.PatientTermCriteria;
+import me.zhengjie.modules.yy.service.dto.PatientTermTimesCountCriteria;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -35,6 +36,14 @@ public class PatientTermController {
     @AnonymousAccess
     public void download(HttpServletResponse response, PatientTermCriteria criteria) throws IOException {
         patientTermService.download(patientTermService.queryAll(criteria), response);
+    }
+
+    @Log("查询患者套餐使用情况")
+    @ApiOperation("查询患者套餐使用情况")
+    @GetMapping("/patientTermTimesCount")
+    @AnonymousAccess
+    public ResponseEntity<Object> queryPatientTermTimesCount(PatientTermTimesCountCriteria criteria) {
+        return new ResponseEntity<>(patientTermService.queryPatientTermTimesCount(criteria), HttpStatus.OK);
     }
 
     @Log("查询单个患者套餐")

@@ -1,8 +1,10 @@
 package me.zhengjie.modules.yy.service;
 
 import me.zhengjie.modules.yy.domain.PatientTerm;
+import me.zhengjie.modules.yy.domain.PatientTermTimesCount;
 import me.zhengjie.modules.yy.service.dto.PatientTermCriteria;
 import me.zhengjie.modules.yy.service.dto.PatientTermDto;
+import me.zhengjie.modules.yy.service.dto.PatientTermTimesCountCriteria;
 import org.springframework.data.domain.Pageable;
 
 import javax.servlet.http.HttpServletResponse;
@@ -15,6 +17,14 @@ import java.util.Map;
  * @date 2020-12-24 14:32
  */
 public interface PatientTermService {
+
+    /**
+     * 查询患者套餐使用情况
+     *
+     * @param criteria .
+     * @return .
+     */
+    List<PatientTermTimesCount> queryPatientTermTimesCount(PatientTermTimesCountCriteria criteria);
 
     /**
      * 查询数据分页
