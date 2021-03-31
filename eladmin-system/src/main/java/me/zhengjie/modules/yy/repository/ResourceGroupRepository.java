@@ -31,4 +31,7 @@ public interface ResourceGroupRepository extends JpaRepository<ResourceGroup, Lo
     )
     List<ResourceGroupCount> findCountByComId(Long comId);
 
+    @Query("from ResourceGroup rg where rg.comId = ?1 and rg.status = '1' order by rg.sort asc")
+    List<ResourceGroup> findByComId(Long comId);
+
 }

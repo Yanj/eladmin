@@ -25,6 +25,8 @@ public class ResourceGroupDto implements Serializable {
 
     private String name;
 
+    private Integer sort;
+
     private String status;
 
     private String remark;

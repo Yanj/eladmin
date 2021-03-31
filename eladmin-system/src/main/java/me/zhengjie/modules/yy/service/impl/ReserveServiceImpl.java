@@ -54,6 +54,7 @@ public class ReserveServiceImpl implements ReserveService {
     private final PatientTermLogRepository patientTermLogRepository;
     private final TermRepository termRepository;
     private final ResourceGroupRepository resourceGroupRepository;
+    private final ResourceGroupSmallMapper resourceGroupSmallMapper;
     private final ResourceCategoryService resourceCategoryService;
     private final ResourceCategoryRepository resourceCategoryRepository;
     private final ResourceRepository resourceRepository;
@@ -164,6 +165,55 @@ public class ReserveServiceImpl implements ReserveService {
             endDate = TimeUtil.getCurrentDate();
         }
         return repository.queryUserReserveCount(comId, beginDate, endDate);
+    }
+
+    @Override
+    public List<ResourceGroupWorkTimeReserveListDto> queryWorkTimeReserveList(WorkTimeReserveListCriteria criteria) {
+        Long comId = criteria.getComId();
+//        JwtUserDto user = (JwtUserDto) SecurityUtils.getCurrentUser();
+//        if (!user.isAdmin()) {
+//            comId = user.getComId();
+//        }
+        if (null == comId) {
+            throw new BadRequestException("comId不能为空");
+        }
+
+        List<WorkTime> workTimeList = workTimeRepository.findByComId(comId);
+        List<ResourceGroup> resourceGroupList = resourceGroupRepository.findByComId(comId);
+
+        ReserveCriteria reserveCriteria = new ReserveCriteria();
+        reserveCriteria.setComId(comId);
+        reserveCriteria.setStatus(YesNoEnum.YES);
+        reserveCriteria.setDate(criteria.getDate());
+        reserveCriteria.setVerifyStatus(criteria.getVerifyStatus());
+        List<Reserve> reserveList = repository.findAll((root, criteriaQuery, criteriaBuilder) -> QueryHelp.getPredicate(root, reserveCriteria, criteriaBuilder));
+
+        List<ResourceGroupWorkTimeReserveListDto> res = new ArrayList<>();
+        for (ResourceGroup resourceGroup : resourceGroupList) {
+            ResourceGroupWorkTimeReserveListDto resourceGroupWorkTimeReserveList = new ResourceGroupWorkTimeReserveListDto();
+            resourceGroupWorkTimeReserveList.setResourceGroup(resourceGroupSmallMapper.toDto(resourceGroup));
+            List<WorkTimeReserveListDto> list = new ArrayList<>();
+            for (WorkTime workTime : workTimeList) {
+                WorkTimeReserveListDto workTimeReserveList = new WorkTimeReserveListDto();
+                workTimeReserveList.setWorkTime(workTimeSmallMapper.toDto(workTime));
+                List<ReserveDto> reserves = new ArrayList<>();
+                for (Reserve reserve : reserveList) {
+                    if (null == reserve.getResourceGroup() || !resourceGroup.getId().equals(reserve.getResourceGroup().getId())) {
+                        continue;
+                    }
+                    if (null == reserve.getWorkTime() || !workTime.getId().equals(reserve.getWorkTime().getId())) {
+                        continue;
+                    }
+                    reserves.add(mapper.toDto(reserve));
+                }
+                workTimeReserveList.setReserves(reserves);
+                list.add(workTimeReserveList);
+            }
+            resourceGroupWorkTimeReserveList.setList(list);
+            res.add(resourceGroupWorkTimeReserveList);
+        }
+
+        return res;
     }
 
     @Override

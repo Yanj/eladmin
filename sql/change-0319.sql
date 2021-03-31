@@ -20,15 +20,16 @@ insert into sys_dict_detail (dict_id, label, value, dict_sort, create_by, update
 insert into sys_dict_detail (dict_id, label, value, dict_sort, create_by, update_by, create_time, update_time) select dict_id, '美团', 'meituan', 1, 'admin', 'admin', now(), now() from sys_dict where name = 'patient_source';
 
 -- 增加 patient_status 字典
-insert into sys_dict (create_by, create_time, update_by, update_time, description, name) values ('admin', '03/18/2021 17:15:14.976', 'admin', '03/18/2021 17:15:14.976', '患者状态', 'patient_status');
-insert into sys_dict_detail (create_by, create_time, update_by, update_time, dict_id, dict_sort, label, value) values ('admin', '03/18/2021 17:16:53.555', 'admin', '03/18/2021 17:16:53.555', 13, 1, '有效', '1');
-insert into sys_dict_detail (create_by, create_time, update_by, update_time, dict_id, dict_sort, label, value) values ('admin', '03/18/2021 17:17:03.745', 'admin', '03/18/2021 17:17:03.745', 13, 2, '无效', '0');
+insert into sys_dict (create_by, create_time, update_by, update_time, description, name) values ('admin', now(), 'admin', now(), '患者状态', 'patient_status');
+insert into sys_dict_detail (dict_id, label, value, dict_sort, create_by, update_by, create_time, update_time) select dict_id, '有效', '1', 1, 'admin', 'admin', now(), now() from sys_dict where name = 'patient_status';
+insert into sys_dict_detail (dict_id, label, value, dict_sort, create_by, update_by, create_time, update_time) select dict_id, '无效', '0', 2, 'admin', 'admin', now(), now() from sys_dict where name = 'patient_status';
 
 
 -- 修改 resource_group 表
 alter table yy_resource_group add com_id bigint(20) DEFAULT NULL comment '公司 ID' after id;
 alter table yy_resource_group add org_id bigint(20) DEFAULT NULL comment '组织 ID' after id;
 alter table yy_resource_group modify dept_id bigint(20) DEFAULT NULL COMMENT '部门 ID';
+alter table yy_resource_group add sort int default null comment '排序' after name;
 
 update yy_resource_group a
     inner join yy_resource_group b on a.id = b.id
@@ -82,6 +83,7 @@ alter table yy_term add org_id bigint(20) DEFAULT NULL comment '组织 ID' after
 alter table yy_term modify dept_id bigint(20) DEFAULT NULL COMMENT '部门 ID';
 alter table yy_term add duration int default null comment '时长' after unit;
 alter table yy_term add operator_count int default null comment '操作员数量' after duration;
+alter table yy_term add term_sort int default null comment '套餐排序' after operator_count;
 
 update yy_term a inner join yy_term b on a.id = b.id set a.org_id = 21, a.com_id = b.dept_id, a.status = 1;
 update yy_term set dept_id = null;
@@ -145,7 +147,7 @@ update yy_work_time set dept_id = null;
 update yy_work_time set status = 1;
 update yy_work_time a inner join (
     select id,cast((time_to_sec(timediff(end_time, begin_time)) / 60) as signed) as duration from yy_work_time
-) b on a.id = b.id set a.duration = b.duration;
+    ) b on a.id = b.id set a.duration = b.duration;
 
 insert into sys_dict (name, description, create_by, update_by, create_time, update_time) values('work_time_status', '工作时间状态', 'admin', 'admin', now(), now());
 insert into sys_dict_detail (dict_id, label, value, dict_sort, create_by, update_by, create_time, update_time) select dict_id, '有效', '1', 1, 'admin', 'admin', now(), now() from sys_dict where name = 'work_time_status';
@@ -162,9 +164,9 @@ update yy_reserve_resource set status = 1;
 
 -- 新增操作员表
 create table yy_reserve_operator(
-  reserve_id bigint(20) not null comment '预约ID',
-  user_id bigint(20) not null comment '用户ID',
-  primary key(reserve_id, user_id)
+                                    reserve_id bigint(20) not null comment '预约ID',
+                                    user_id bigint(20) not null comment '用户ID',
+                                    primary key(reserve_id, user_id)
 );
 alter table yy_reserve_operator comment '预约操作员表';
 

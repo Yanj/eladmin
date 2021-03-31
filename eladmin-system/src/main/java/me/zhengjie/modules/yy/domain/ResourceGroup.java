@@ -43,6 +43,8 @@ public class ResourceGroup implements Serializable {
     @ApiModelProperty(value = "名称")
     private String name;
 
+    private Integer sort;
+
     @Enumerated
     @ApiModelProperty(value = "状态")
     private YesNoEnum status;

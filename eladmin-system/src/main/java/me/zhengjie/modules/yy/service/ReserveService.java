@@ -40,6 +40,14 @@ public interface ReserveService {
     List<UserReserveCount> queryUserReserveCount(UserReserveCountCriteria criteria);
 
     /**
+     * 查询工作时段预约列表
+     *
+     * @param criteria     .
+     * @return .
+     */
+    List<ResourceGroupWorkTimeReserveListDto> queryWorkTimeReserveList(WorkTimeReserveListCriteria criteria);
+
+    /**
      * 查询数据分页
      *
      * @param criteria 条件
