@@ -17,14 +17,6 @@ import java.util.Map;
 public interface ResourceCategoryService {
 
     /**
-     * 根据父 id 查询
-     *
-     * @param pid .
-     * @return .
-     */
-    List<ResourceCategoryDto> getResourceCategories(Long pid, Long deptId);
-
-    /**
      * 查询数据分页
      *
      * @param criteria 条件

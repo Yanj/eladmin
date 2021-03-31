@@ -25,14 +25,6 @@ public interface ResourceGroupService {
     void updateResourceCategory(ResourceGroup resources, ResourceGroupDto resourceGroupDto);
 
     /**
-     * 根据父 id 查询
-     *
-     * @param pid .
-     * @return .
-     */
-    List<ResourceGroupDto> getResourceGroups(Long pid, Long deptId);
-
-    /**
      * 查询数据分页
      *
      * @param criteria 条件
@@ -48,15 +40,6 @@ public interface ResourceGroupService {
      * @return List<ResourceGroupDto>
      */
     List<ResourceGroupDto> queryAll(ResourceGroupCriteria criteria);
-
-    /**
-     * 查询套餐对应的资源分组
-     *
-     * @param deptId .
-     * @param termCode .
-     * @return .
-     */
-    List<ResourceGroupDto> queryByDeptIdAndTermCode(Long deptId, String termCode);
 
     /**
      * 根据ID查询

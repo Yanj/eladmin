@@ -17,10 +17,16 @@ public class ReserveResourceDto implements Serializable {
 
     private ReserveSmallDto reserve;
 
+    private String date;
+
+    private WorkTimeSmallDto workTime;
+
     private ResourceCategorySmallDto resourceCategory;
 
     private ResourceGroupSmallDto resourceGroup;
 
     private ResourceSmallDto resource;
+
+    private String status;
 
 }

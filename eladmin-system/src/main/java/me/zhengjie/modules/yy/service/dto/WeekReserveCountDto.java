@@ -12,9 +12,14 @@ import java.util.List;
 @Data
 public class WeekReserveCountDto implements Serializable {
 
+    private List<String> dates;
+
     private List<Long> all;
+
     private List<Long> init;
+
     private List<Long> checkIn;
+
     private List<Long> verified;
 
 }

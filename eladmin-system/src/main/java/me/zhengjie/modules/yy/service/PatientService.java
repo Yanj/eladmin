@@ -4,6 +4,7 @@ import me.zhengjie.domain.vo.HisCkItemVo;
 import me.zhengjie.modules.yy.domain.Patient;
 import me.zhengjie.modules.yy.service.dto.PatientCriteria;
 import me.zhengjie.modules.yy.service.dto.PatientDto;
+import me.zhengjie.modules.yy.service.dto.PatientSync;
 import org.springframework.data.domain.Pageable;
 
 import javax.servlet.http.HttpServletResponse;
@@ -18,19 +19,19 @@ import java.util.Map;
 public interface PatientService {
 
     /**
-     * 查询
+     * 本地同步患者数据
      *
-     * @param criteria .
+     * @param patientSync .
      * @return .
      */
-    List<PatientDto> query(PatientCriteria criteria);
+    PatientDto syncLocal(PatientSync patientSync);
 
     /**
      * 同步患者数据
      *
-     * @param hisCkItemVo .
+     * @param criteria .
      */
-    Map<String, Object> sync(HisCkItemVo hisCkItemVo) throws Exception;
+    PatientDto sync(PatientCriteria criteria) throws Exception;
 
     /**
      * 查询数据分页

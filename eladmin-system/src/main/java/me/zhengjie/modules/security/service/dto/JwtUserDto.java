@@ -54,6 +54,10 @@ public class JwtUserDto implements UserDetails {
         return authorities.stream().map(GrantedAuthority::getAuthority).collect(Collectors.toSet());
     }
 
+    public boolean isAdmin() {
+        return getRoles().contains("admin");
+    }
+
     public Long getOrgId() {
         if (null != org) {
             return org.getId();

@@ -38,6 +38,8 @@ public interface DeptService {
      */
     List<DeptDto> queryAll(DeptQueryCriteria criteria, Boolean isQuery) throws Exception;
 
+    List<DeptDto> queryAll() throws Exception;
+
     /**
      * 根据ID查询
      * @param id /

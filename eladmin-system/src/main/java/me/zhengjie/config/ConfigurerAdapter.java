@@ -15,6 +15,9 @@
  */
 package me.zhengjie.config;
 
+import com.alibaba.fastjson.parser.DefaultJSONParser;
+import com.alibaba.fastjson.parser.ParserConfig;
+import com.alibaba.fastjson.parser.deserializer.ObjectDeserializer;
 import com.alibaba.fastjson.serializer.SerializerFeature;
 import com.alibaba.fastjson.support.config.FastJsonConfig;
 import com.alibaba.fastjson.support.spring.FastJsonHttpMessageConverter;
@@ -25,12 +28,16 @@ import org.springframework.core.convert.converter.Converter;
 import org.springframework.format.FormatterRegistry;
 import org.springframework.http.MediaType;
 import org.springframework.http.converter.HttpMessageConverter;
+import org.springframework.lang.NonNullApi;
+import org.springframework.lang.Nullable;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 import org.springframework.web.filter.CorsFilter;
 import org.springframework.web.servlet.config.annotation.EnableWebMvc;
 import org.springframework.web.servlet.config.annotation.ResourceHandlerRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
+
+import java.lang.reflect.Type;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
@@ -83,6 +90,7 @@ public class ConfigurerAdapter implements WebMvcConfigurer {
         FastJsonConfig config = new FastJsonConfig();
         config.setDateFormat("yyyy-MM-dd HH:mm:ss");
         config.setSerializerFeatures(SerializerFeature.DisableCircularReferenceDetect);
+        config.getParserConfig().putDeserializer(YesNoEnum.class, new YesNoEnumDeserializer());
         converter.setFastJsonConfig(config);
         converter.setSupportedMediaTypes(supportMediaTypeList);
         converter.setDefaultCharset(StandardCharsets.UTF_8);
@@ -103,5 +111,26 @@ public class ConfigurerAdapter implements WebMvcConfigurer {
                 return null;
             }
         });
+    }
+
+    public static class YesNoEnumDeserializer implements ObjectDeserializer {
+
+        @Override
+        public <T> T deserialze(DefaultJSONParser parser, Type type, Object fieldName) {
+            String value = parser.getLexer().stringVal();
+            if ("0".equals(value)) {
+                return (T) YesNoEnum.NO;
+            }
+            if ("1".equals(value)) {
+                return (T) YesNoEnum.YES;
+            }
+            return null;
+        }
+
+        @Override
+        public int getFastMatchToken() {
+            return 0;
+        }
+
     }
 }

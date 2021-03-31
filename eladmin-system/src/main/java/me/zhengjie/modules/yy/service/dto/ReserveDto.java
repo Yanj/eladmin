@@ -2,6 +2,7 @@ package me.zhengjie.modules.yy.service.dto;
 
 import lombok.Getter;
 import lombok.Setter;
+import me.zhengjie.base.BaseDTO;
 import me.zhengjie.modules.system.service.dto.DeptSmallDto;
 import me.zhengjie.modules.system.service.dto.UserSmallDto;
 
@@ -15,49 +16,41 @@ import java.util.Set;
  */
 @Getter
 @Setter
-public class ReserveDto implements Serializable {
+public class ReserveDto extends BaseDTO implements Serializable {
 
     private Long id;
 
-    private DeptSmallDto dept;
+    private Long orgId;
 
-    private PatientDto patient;
+    private Long comId;
+
+    private Long deptId;
+
+    private PatientSmallDto patient;
 
     private TermSmallDto term;
 
     private PatientTermSmallDto patientTerm;
 
-    private Long patientTermId;
-
     private ResourceGroupSmallDto resourceGroup;
 
-    private Long resourceGroupId;
+    private String date;
 
     private WorkTimeSmallDto workTime;
-
-    private Long workTimeId;
-
-    private Set<ReserveResourceDto> reserveResources;
-
-    private UserSmallDto operator;
-
-    private String date;
 
     private String beginTime;
 
     private String endTime;
 
+    private Set<ReserveResourceDto> reserveResources;
+
+    private Set<UserSmallDto> operators;
+
+    private String verifyStatus;
+
     private String status;
 
     private String remark;
-
-    private String createBy;
-
-    private String updatedBy;
-
-    private Timestamp createTime;
-
-    private Timestamp updateTime;
 
     @Override
     public boolean equals(Object o) {

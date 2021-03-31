@@ -5,11 +5,10 @@ import io.swagger.annotations.ApiOperation;
 import lombok.RequiredArgsConstructor;
 import me.zhengjie.annotation.AnonymousAccess;
 import me.zhengjie.annotation.Log;
-import me.zhengjie.domain.vo.HisCkItemVo;
 import me.zhengjie.modules.yy.domain.Patient;
 import me.zhengjie.modules.yy.service.PatientService;
 import me.zhengjie.modules.yy.service.dto.PatientCriteria;
-import me.zhengjie.utils.HisCkInfoTypeEnum;
+import me.zhengjie.modules.yy.service.dto.PatientSync;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -39,14 +38,6 @@ public class PatientController {
         patientService.download(patientService.queryAll(criteria), response);
     }
 
-    @Log("查询全部患者")
-    @ApiOperation("查询全部患者")
-    @GetMapping("/list")
-    @AnonymousAccess
-    public ResponseEntity<Object> query(PatientCriteria criteria) {
-        return new ResponseEntity<>(patientService.queryAll(criteria), HttpStatus.OK);
-    }
-
     @Log("查询患者")
     @ApiOperation("查询患者")
     @GetMapping
@@ -55,23 +46,20 @@ public class PatientController {
         return new ResponseEntity<>(patientService.queryAll(criteria, pageable), HttpStatus.OK);
     }
 
-    @Log("查询患者")
-    @ApiOperation("查询患者")
-    @GetMapping("/query")
+    @Log("本地同步患者")
+    @ApiOperation("本地同步患者")
+    @GetMapping("/syncLocal")
     @AnonymousAccess
-    public ResponseEntity<Object> querySingle(PatientCriteria criteria) throws Exception {
-        return new ResponseEntity<>(patientService.query(criteria), HttpStatus.OK);
+    public ResponseEntity<Object> syncLocal(PatientSync patientSync) throws Exception {
+        return new ResponseEntity<>(patientService.syncLocal(patientSync), HttpStatus.OK);
     }
 
     @Log("同步患者")
     @ApiOperation("同步患者")
-    @PutMapping("/sync")
+    @GetMapping("/sync")
     @AnonymousAccess
-    public ResponseEntity<Object> sync(@RequestBody PatientCriteria criteria) throws Exception {
-        HisCkItemVo hisCkItemVo = new HisCkItemVo();
-        hisCkItemVo.setInfoType(HisCkInfoTypeEnum.valueOf(criteria.getInfoType()));
-        hisCkItemVo.setPatientInfo(criteria.getPatientInfo());
-        return new ResponseEntity<>(patientService.sync(hisCkItemVo), HttpStatus.OK);
+    public ResponseEntity<Object> sync(PatientCriteria criteria) throws Exception {
+        return new ResponseEntity<>(patientService.sync(criteria), HttpStatus.OK);
     }
 
     @Log("新增患者")

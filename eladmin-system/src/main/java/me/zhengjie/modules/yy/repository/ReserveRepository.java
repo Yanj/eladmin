@@ -1,10 +1,8 @@
 package me.zhengjie.modules.yy.repository;
 
-import me.zhengjie.modules.yy.domain.Reserve;
-import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
-import org.springframework.data.jpa.repository.Lock;
-import org.springframework.data.jpa.repository.Query;
+import me.zhengjie.modules.yy.domain.*;
+import me.zhengjie.utils.enums.YesNoEnum;
+import org.springframework.data.jpa.repository.*;
 
 import javax.persistence.LockModeType;
 import java.util.List;
@@ -18,145 +16,102 @@ public interface ReserveRepository extends JpaRepository<Reserve, Long>, JpaSpec
 
     /**
      * 查询某医院某时间内每天各套餐预约总数
-     * @param deptId .
+     * @param comId .
      * @param beginDate .
      * @param endDate .
      * @return .
      */
-    /*
-select term_id, `date`, count(1) from yy_reserve where dept_id = 32 and `date` >= '2021-01-16' and `date` < '2021-01-19' group by term_id, `date`
-     */
     @Query(
-            value = "" +
-                    "select " +
-                    "term_id as term_id, " +
-                    "`date` as date, " +
-                    "count(1) as count " +
-                    "from yy_reserve " +
-                    "where " +
-                    "    dept_id = ?1 " +
-                    "and status <> 'canceled' " +
-                    "and `date` >= ?2 " +
-                    "and `date` < ?3 " +
-                    "group by term_id, `date`;" +
-                    "",
-            nativeQuery = true
+            value = "select new me.zhengjie.modules.yy.domain.ReserveTermCount(r.term.id,r.date,count(r)) " +
+                    "from Reserve r " +
+                    "where 1=1 " +
+                    "    and r.comId = ?1 " +
+                    "    and r.status = '1' " +
+                    "    and r.verifyStatus <> 'canceled' " +
+                    "    and r.date >= ?2 " +
+                    "    and r.date < ?3 " +
+                    "group by r.term.id, r.date"
     )
-    List<Map<String, Object>> queryTermCount(Long deptId, String beginDate, String endDate);
+    List<ReserveTermCount> queryTermCountByComId(Long comId, String beginDate, String endDate);
 
     /**
-     * 查询某日各时段资源占用数量
-     *
-     * @param date .
+     * 查询某医院某时间内每天各套餐预约总数
+     * @param orgId .
+     * @param beginDate .
+     * @param endDate .
      * @return .
      */
-    /*
-select r.work_time_id as work_time_id, r.resource_group_id as resource_group_id, count(1) as count from yy_reserve r
-where r.dept_id = ?1 and r.date = ?2 r.status != 'canceled'
-group by r.work_time_id, r.resource_group_id
-     */
     @Query(
-            value = "" +
-                    "select r.work_time_id as work_time_id, r.resource_group_id as resource_group_id, count(1) as count from yy_reserve r " +
-                    "where r.dept_id = ?1 and r.date = ?2 and r.status != 'canceled' " +
-                    "group by r.work_time_id, r.resource_group_id " +
-                    "",
-            nativeQuery = true
+            value = "select new me.zhengjie.modules.yy.domain.ReserveTermCount(r.term.id,r.date,count(r)) " +
+                    "from Reserve r " +
+                    "where 1=1 " +
+                    "    and r.orgId = ?1 " +
+                    "    and r.status = '1' " +
+                    "    and r.verifyStatus <> 'canceled' " +
+                    "    and r.date >= ?2 " +
+                    "    and r.date < ?3 " +
+                    "group by r.term.id, r.date"
     )
-    List<Map<String, Object>> queryCountGroupByWorkTimeAndResourceGroup(Long deptId, String date);
+    List<ReserveTermCount> queryTermCountByOrgId(Long orgId, String beginDate, String endDate);
 
     /**
-     * 查询某日的时段预约总数
+     * 查询某日的各预约时段预约总数
      * @param date
      * @return
      */
-    /*
-select r.work_time_id as work_time_id, count(1) as count from yy_reserve r
-where r.dept_id = ?1 and r.date = ?2 and r.status != 'canceled'
-group by r.work_time_id
-     */
     @Query(
             value = "" +
-                    "select r.work_time_id as work_time_id, count(1) as count from yy_reserve r " +
-                    "where r.dept_id = ?1 and r.date = ?2 and r.status != 'canceled' " +
-                    "group by r.work_time_id " +
-                    "",
-            nativeQuery = true
+                    "select new me.zhengjie.modules.yy.domain.ReserveWorkTimeCount(r.workTime.id, r.verifyStatus, count(r)) " +
+                    "from Reserve r " +
+                    "where r.comId = ?1 and r.date = ?2 and r.verifyStatus <> 'canceled' and r.status = '1' " +
+                    "group by r.workTime.id, r.verifyStatus " +
+                    ""
     )
-    List<Map<String, Object>> queryCountGroupByWorkTimeId(Long deptId, String date);
+    List<ReserveWorkTimeCount> queryCountGroupByWorkTimeId(Long comId, String date);
 
     /**
-     * 日期范围内根据状态统计
+     * 查询日期段内某状态预约的总数
      *
+     * @param orgId .
+     * @param status .
      * @param beginDate .
      * @param endDate .
-     * @param status .
      * @return .
      */
-    /*
-select r.date as date,count(1) as count from yy_reserve r
-where r.dept_id = ?1 and r.date >= ?2 and r.date < ?3 and r.status = ?4
-group by r.date
-     */
     @Query(
-            value = "" +
-                    "select r.date as date, count(1) as count from yy_reserve r " +
-                    "where r.dept_id = ?1 and r.date >= ?2 and r.date < ?3 and r.status = ?4 " +
-                    "group by r.date ",
-            nativeQuery = true
+            value = "select " +
+                    "new me.zhengjie.modules.yy.domain.ReserveDateCount(r.date, r.verifyStatus, count(r)) " +
+                    "from Reserve r " +
+                    "where 1=1 " +
+                    "    and r.orgId = ?1 " +
+                    "    and r.verifyStatus = ?2 " +
+                    "    and r.date >= ?3 " +
+                    "    and r.date < ?4 " +
+                    "group by r.date, r.verifyStatus "
     )
-    List<Map<String, Object>> queryRangeCountByStatusEquals(Long deptId, String beginDate, String endDate, String status);
+    List<ReserveDateCount> queryDateCountByOrgId(Long orgId, ReserveVerifyStatus status, String beginDate, String endDate);
 
     /**
-     * 日期范围内根据状态统计
+     * 查询日期段内某状态预约的总数
      *
+     * @param comId .
+     * @param status .
      * @param beginDate .
      * @param endDate .
-     * @param status .
      * @return .
      */
-    /*
-select r.date as date,count(1) as count from yy_reserve r
-where r.dept_id = ?1 and r.date >= ?2 and r.date < ?3 and r.status != 'canceled'
-group by r.date
-     */
     @Query(
-            value = "" +
-                    "select r.date as date, count(1) as count from yy_reserve r " +
-                    "where r.dept_id = ?1 and r.date >= ?2 and r.date < ?3 and r.status != ?4 " +
-                    "group by r.date ",
-            nativeQuery = true
+            value = "select " +
+                    "new me.zhengjie.modules.yy.domain.ReserveDateCount(r.date, r.verifyStatus, count(r)) " +
+                    "from Reserve r " +
+                    "where 1=1 " +
+                    "    and r.comId = ?1 " +
+                    "    and r.verifyStatus = ?2 " +
+                    "    and r.date >= ?3 " +
+                    "    and r.date < ?4 " +
+                    "group by r.date, r.verifyStatus "
     )
-    List<Map<String, Object>> queryRangeCountByStatusNotEquals(Long deptId, String beginDate, String endDate, String status);
-
-    /**
-     * 统计今日预约数据
-     *
-     * @param date .
-     * @return .
-     */
-    /*
-select 'all' as status, count(1) as count from yy_reserve r where r.date =  ?1 and r.status != ''
-union
-select 'init' as status, count(1) as count from yy_reserve r where r.date = ?1 and r.status = 'init'
-union
-select 'check_in' as status, count(1) as count from yy_reserve r where r.date = ?1 and r.status = 'check_in'
-union
-select 'verified' as status, count(1) as count from yy_reserve r where r.date = ?1 and r.status = 'verified'
-     */
-    @Query(
-            value = "" +
-                    "select 'all' as status, count(1) as count from yy_reserve r where r.dept_id = ?1 and r.date =  ?2 and r.status != 'canceled' " +
-                    "union " +
-                    "select 'init' as status, count(1) as count from yy_reserve r where r.dept_id = ?1 and r.date = ?2 and r.status = 'init' " +
-                    "union " +
-                    "select 'check_in' as status, count(1) as count from yy_reserve r where r.dept_id = ?1 and r.date = ?2 and r.status = 'check_in' " +
-                    "union " +
-                    "select 'verified' as status, count(1) as count from yy_reserve r where r.dept_id = ?1 and r.date = ?2 and r.status = 'verified'" +
-            "",
-            nativeQuery = true
-    )
-    List<Map<String, Object>> queryTodayCount(Long deptId, String date);
+    List<ReserveDateCount> queryDateCountByComId(Long comId, ReserveVerifyStatus status, String beginDate, String endDate);
 
     /**
      * 根据状态和日期查询
@@ -165,7 +120,8 @@ select 'verified' as status, count(1) as count from yy_reserve r where r.date = 
      * @param date
      * @return
      */
-    List<Reserve> findByStatusAndDateLessThan(String status, String date);
+    @Query(value = "from Reserve where status = ?1 and date < ?2")
+    List<Reserve> findByStatusAndDate(ReserveVerifyStatus status, String date);
 
     /**
      * 锁行更新
@@ -175,8 +131,18 @@ select 'verified' as status, count(1) as count from yy_reserve r where r.date = 
     Reserve getReserveForUpdate(Long id);
 
     /**
+     * 更新状态
+     *
+     * @param id .
+     * @param status .
+     * @return .
+     */
+    @Modifying
+    @Query("update Reserve r set r.status = ?2 where r.id = ?1")
+    int updateStatus(Long id, YesNoEnum status);
+
+    /**
      * 查询同一个套餐同一时段的预约数量
-     * @param deptId .
      * @param patientId .
      * @param patientTermId .
      * @param date .
@@ -186,105 +152,118 @@ select 'verified' as status, count(1) as count from yy_reserve r where r.date = 
     @Query(value = "" +
             "select count(r) from Reserve r " +
             "where 1=1 " +
-            "and r.dept.id = ?1 " +
-            "and r.patient.id = ?2 " +
-            "and r.patientTerm.id = ?3 " +
-            "and r.date = ?4 " +
-            "and r.workTime.id = ?5 " +
+            "and r.patient.id = ?1 " +
+            "and r.patientTerm.id = ?2 " +
+            "and r.date = ?3 " +
+            "and r.workTime.id = ?4 " +
             "and r.status <> 'canceled'")
-    Long countByPatientTerm(Long deptId, Long patientId, Long patientTermId, String date, Long workTimeId);
+    Long countByPatientTerm(Long patientId, Long patientTermId, String date, Long workTimeId);
 
     /**
-     * 查询分类资源已预约数量
-     */
-    /*
-select rr.resource_category_id, count(rr.resource_category_id) as count
-from yy_reserve re
-right join yy_reserve_resource rr on re.id = rr.reserve_id
-where re.dept_id = 0 and re.date = '' and re.work_time_id = 0
-group by rr.resource_category_id
-     */
-    @Query(value = "" +
-            "select rr.resource_category_id as resource_category_id, count(rr.resource_category_id) as count " +
-            "from yy_reserve re " +
-            "right join yy_reserve_resource rr on re.id = rr.reserve_id " +
-            "where re.dept_id = ?1 and re.date = ?2 and re.work_time_id = ?3 and rr.resource_id is null " +
-            "group by rr.resource_category_id",
-            nativeQuery = true
-    )
-    List<Map<String, Object>> queryReserveResourceCount(Long deptId, String date, Long workTimeId);
-
-    /**
-     * 查询分类资源总数
-     */
-    /*
-select rgc.resource_category_id, count(r.`count`) as count from yy_resource_group_category rgc
-left join yy_resource r on rgc.resource_category_id = r.resource_category_id group by rgc.resource_category_id
-     */
-    @Query(value = "" +
-            "select rgc.resource_category_id, COALESCE(sum(r.`count`),0) as count " +
-            "from yy_resource_group_category rgc " +
-            "left join yy_resource r on rgc.resource_category_id = r.resource_category_id " +
-            "group by rgc.resource_category_id",
-            nativeQuery = true
-    )
-    List<Map<String, Object>> queryCategoryCount();
-
-    /**
-     * 查询资源分类在某个时段的使用次数
+     * 查询分类资源已占用数量(未核销的)
      *
-     * @param deptId     .
-     * @param date       .
-     * @param workTimeId .
+     * @param comId .
+     * @param date .
      * @return .
      */
-    /*
-select rgc.resource_category_id as resource_category_id, count(re.id) as count
-from yy_reserve re
-right join yy_resource_group_category rgc on re.resource_group_id = rgc.resource_group_id
-where re.dept_id = 0 and re.date = '' and re.work_time_id = 0
-group by rgc.resource_category_id;
-    */
     @Query(value = "" +
-            "select rgc.resource_category_id as resource_category_id, count(re.id) as count " +
-            "from yy_reserve re " +
-            "right join yy_resource_group_category rgc on re.resource_group_id = rgc.resource_group_id " +
-            "where re.dept_id = ?1 and re.date = ?2 and re.work_time_id = ?3 " +
-            "group by rgc.resource_category_id",
-            nativeQuery = true
+            "select new me.zhengjie.modules.yy.domain.ReserveResourceCategoryCount(" +
+            "    rr.workTime.id, rr.resourceCategory.id, count(rr.resourceCategory.id)" +
+            ") " +
+            "from ReserveResource rr " +
+            "left outer join Reserve r " +
+            "    on rr.reserve.id = r.id " +
+            "where 1=1 " +
+            "    and rr.resource.id is null " +
+            "    and rr.status = '1' " +
+            "    and r.comId = ?1 " +
+            "    and r.date = ?2 " +
+            "    and r.status = '1' " +
+            "    and r.verifyStatus <> 'canceled' " +
+            "    and r.verifyStatus <> 'verified' " +
+            "group by rr.workTime.id, rr.resourceCategory.id " +
+            ""
     )
-    List<Map<String, Object>> queryCategoryCount(Long deptId, String date, Long workTimeId);
+    List<ReserveResourceCategoryCount> queryReserveResourceCount(Long comId, String date);
 
-    @Query(value = "select " +
-            "dept_id as dept_id, `date` as `date`, work_time_id as work_time_id, term_id as term_id, count(1) as count " +
-            "from yy_reserve where status <> 'canceled' and dept_id = ?1 " +
-            "group by dept_id, `date`, work_time_id, term_id",
-            nativeQuery = true
+    /**
+     * 根据资源分组进行统计已预约数量
+     *
+     * @param comId .
+     * @return .
+     */
+    @Query(
+            value = "select new me.zhengjie.modules.yy.domain.ReserveCount(r.comId, r.date, r.workTime.id, r.term.id, count(r)) " +
+                    "from Reserve r " +
+                    "where 1=1 " +
+                    "    and r.comId = ?1 " +
+                    "    and r.status = '1' " +
+                    "    and r.verifyStatus <> 'canceled' " +
+                    "group by r.comId, r.date, r.workTime.id, r.term.id "
     )
-    List<Map<String, Object>> queryReserveCount(Long deptId);
+    List<ReserveCount> queryReserveCount(Long comId);
 
-    @Query(value = "select " +
-            "dept_id as dept_id, `date` as `date`, work_time_id as work_time_id, term_id as term_id, count(1) as count " +
-            "from yy_reserve where status <> 'canceled' and dept_id = ?1 and `date` = ?2 " +
-            "group by dept_id, `date`, work_time_id, term_id",
-            nativeQuery = true
+    /**
+     * 根据资源分组进行统计已预约数量
+     *
+     * @param comId .
+     * @param date .
+     * @return .
+     */
+    @Query(
+            value = "select new me.zhengjie.modules.yy.domain.ReserveCount(r.comId, r.date, r.workTime.id, r.term.id, count(r)) " +
+                    "from Reserve r " +
+                    "where 1=1 " +
+                    "    and r.comId = ?1 " +
+                    "    and r.date = ?2 " +
+                    "    and r.status = '1' " +
+                    "    and r.verifyStatus <> 'canceled' " +
+                    "group by r.comId, r.date, r.workTime.id, r.term.id "
     )
-    List<Map<String, Object>> queryReserveCountByDate(Long deptId, String date);
+    List<ReserveCount> queryReserveCount(Long comId, String date);
 
-    @Query(value = "select " +
-            "dept_id as dept_id, `date` as `date`, work_time_id as work_time_id, term_id as term_id, count(1) as count " +
-            "from yy_reserve where status <> 'canceled' and dept_id = ?1 and `date` = ?2 and term_id = ?3 " +
-            "group by dept_id, `date`, work_time_id, term_id",
-            nativeQuery = true
+    /**
+     * 根据资源分组进行统计已预约数量
+     *
+     * @param comId .
+     * @param date .
+     * @param termId .
+     * @return .
+     */
+    @Query(
+            value = "select new me.zhengjie.modules.yy.domain.ReserveCount(r.comId, r.date, r.workTime.id, r.term.id, count(r)) " +
+                    "from Reserve r " +
+                    "where 1=1 " +
+                    "    and r.comId = ?1 " +
+                    "    and r.date = ?2 " +
+                    "    and r.term.id = ?3 " +
+                    "    and r.status = '1' " +
+                    "    and r.verifyStatus <> 'canceled' " +
+                    "group by r.comId, r.date, r.workTime.id, r.term.id "
     )
-    List<Map<String, Object>> queryReserveCountByDateAndTermId(Long deptId, String date, Long termId);
+    List<ReserveCount> queryReserveCount(Long comId, String date, Long termId);
 
-    @Query(value = "select " +
-            "dept_id as dept_id, `date` as `date`, work_time_id as work_time_id, term_id as term_id, count(1) as count " +
-            "from yy_reserve where status <> 'canceled' and dept_id = ?1 and `date` = ?2 and term_id = ?3 and resource_group_id = ?4 " +
-            "group by dept_id, `date`, work_time_id, term_id",
-            nativeQuery = true
+    /**
+     * 根据资源分组进行统计已预约数量
+     *
+     * @param comId .
+     * @param date .
+     * @param termId .
+     * @param resourceGroupId .
+     * @return .
+     */
+    @Query(
+            value = "select new me.zhengjie.modules.yy.domain.ReserveCount(r.comId, r.date, r.workTime.id, r.term.id, count(r)) " +
+                    "from Reserve r " +
+                    "where 1=1 " +
+                    "    and r.comId = ?1 " +
+                    "    and r.date = ?2 " +
+                    "    and r.term.id = ?3 " +
+                    "    and r.resourceGroup.id = ?4 " +
+                    "    and r.status = '1' " +
+                    "    and r.verifyStatus <> 'canceled' " +
+                    "group by r.comId, r.date, r.workTime.id, r.term.id "
     )
-    List<Map<String, Object>> queryReserveCountByDateAndTermIdAndResourceGroupId(Long deptId, String date, Long termId, Long resourceGroupId);
+    List<ReserveCount> queryReserveCount(Long comId, String date, Long termId, Long resourceGroupId);
 
 }

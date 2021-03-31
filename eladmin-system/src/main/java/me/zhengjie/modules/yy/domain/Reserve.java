@@ -6,16 +6,13 @@ import com.alibaba.fastjson.annotation.JSONField;
 import io.swagger.annotations.ApiModelProperty;
 import lombok.Getter;
 import lombok.Setter;
-import me.zhengjie.modules.system.domain.Dept;
+import me.zhengjie.base.BaseEntity;
 import me.zhengjie.modules.system.domain.User;
-import org.hibernate.annotations.CreationTimestamp;
-import org.hibernate.annotations.UpdateTimestamp;
-import org.springframework.data.annotation.CreatedBy;
-import org.springframework.data.annotation.LastModifiedBy;
+import me.zhengjie.utils.enums.YesNoEnum;
 
 import javax.persistence.*;
+import javax.validation.constraints.NotNull;
 import java.io.Serializable;
-import java.sql.Timestamp;
 import java.util.Set;
 
 /**
@@ -26,81 +23,104 @@ import java.util.Set;
 @Table(name = "yy_reserve")
 @Getter
 @Setter
-public class Reserve implements Serializable {
+public class Reserve extends BaseEntity implements Serializable {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @ApiModelProperty(value = "ID")
     private Long id;
 
-    @JSONField(serialize = false)
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "dept_id")
-    private Dept dept;
+    @Column(name = "org_id")
+    @ApiModelProperty(value = "组织ID")
+    private Long orgId;
+
+    @Column(name = "com_id")
+    @ApiModelProperty(value = "公司ID")
+    private Long comId;
+
+    @Column(name = "dept_id")
+    @ApiModelProperty(value = "部门ID")
+    private Long deptId;
 
     @JSONField(serialize = false)
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "patient_id")
+    @ApiModelProperty(value = "患者")
     private Patient patient;
 
     @JSONField(serialize = false)
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "term_id")
+    @ApiModelProperty(value = "套餐")
     private Term term;
 
     @JSONField(serialize = false)
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "patient_term_id")
+    @ApiModelProperty(value = "患者套餐")
     private PatientTerm patientTerm;
 
     @JSONField(serialize = false)
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "resource_group_id")
+    @ApiModelProperty(value = "资源分组")
     private ResourceGroup resourceGroup;
 
+    @NotNull
+    @JoinColumn(name = "date")
+    @ApiModelProperty(value = "日期")
+    private String date;
+
+    @NotNull
     @JSONField(serialize = false)
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "work_time_id")
+    @ApiModelProperty(value = "工作时段")
     private WorkTime workTime;
+
+    @NotNull
+    @JoinColumn(name = "begin_time")
+    @ApiModelProperty(value = "开始时间")
+    private String beginTime;
+
+    @NotNull
+    @JoinColumn(name = "end_time")
+    @ApiModelProperty(value = "结束时间")
+    private String endTime;
 
     @JSONField(serialize = false)
     @OneToMany(fetch = FetchType.LAZY)
     @JoinColumn(name = "reserve_id", referencedColumnName = "id")
+    @ApiModelProperty(value = "预约资源")
     private Set<ReserveResource> reserveResources;
 
     @JSONField(serialize = false)
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "operator_id")
-    private User operator;
+    @ManyToMany()
+    @JoinTable(
+            name = "yy_reserve_operator",
+            joinColumns = {
+                    @JoinColumn(name = "reserve_id", referencedColumnName = "id"),
+            },
+            inverseJoinColumns = {
+                    @JoinColumn(name = "user_id", referencedColumnName = "user_id")
+            }
+    )
+    @ApiModelProperty(value = "操作员")
+    private Set<User> operators;
 
-    private String date;
+    @Enumerated(value = EnumType.STRING)
+    @Column(name = "verify_status")
+    @ApiModelProperty(value = "核销状态")
+    private ReserveVerifyStatus verifyStatus;
 
-    private String beginTime;
+    @Enumerated
+    @Column(name = "status")
+    @ApiModelProperty(value = "状态")
+    private YesNoEnum status;
 
-    private String endTime;
-
-    private String status;
-
+    @Column(name = "remark")
+    @ApiModelProperty(value = "备注")
     private String remark;
-
-    @CreatedBy
-    @Column(name = "create_by", updatable = false)
-    @ApiModelProperty(value = "创建人", hidden = true)
-    private String createBy;
-
-    @LastModifiedBy
-    @Column(name = "update_by")
-    @ApiModelProperty(value = "更新人", hidden = true)
-    private String updatedBy;
-
-    @CreationTimestamp
-    @Column(name = "create_time", updatable = false)
-    @ApiModelProperty(value = "创建时间", hidden = true)
-    private Timestamp createTime;
-
-    @UpdateTimestamp
-    @Column(name = "update_time")
-    @ApiModelProperty(value = "更新时间", hidden = true)
-    private Timestamp updateTime;
 
     public void copy(Reserve source) {
         BeanUtil.copyProperties(source, this, CopyOptions.create().setIgnoreNullValue(true));

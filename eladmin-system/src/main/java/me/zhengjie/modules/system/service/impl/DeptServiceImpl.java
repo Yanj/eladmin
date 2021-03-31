@@ -88,6 +88,32 @@ public class DeptServiceImpl implements DeptService {
     }
 
     @Override
+    public List<DeptDto> queryAll() throws Exception {
+        DeptQueryCriteria criteria = new DeptQueryCriteria();
+        criteria.setPidIsNull(true);
+        List<DeptDto> deptDtos = queryAll(criteria, true);
+        queryAll(deptDtos);
+        return deptDtos;
+    }
+
+    private void queryAll(List<DeptDto> list) throws Exception {
+        if (null == list || list.isEmpty()) {
+            return;
+        }
+        for (DeptDto dept : list) {
+            DeptQueryCriteria criteria = new DeptQueryCriteria();
+            criteria.setPid(dept.getId());
+            criteria.setEnabled(true);
+            List<DeptDto> deptDtos = queryAll(criteria, true);
+            if (!deptDtos.isEmpty()) {
+                dept.setChildren(deptDtos);
+                queryAll(deptDtos);
+            }
+        }
+    }
+
+
+    @Override
     @Cacheable(key = "'id:' + #p0")
     public DeptDto findById(Long id) {
         Dept dept = deptRepository.findById(id).orElseGet(Dept::new);

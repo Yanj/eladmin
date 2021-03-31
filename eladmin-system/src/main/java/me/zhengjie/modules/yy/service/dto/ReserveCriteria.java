@@ -2,6 +2,8 @@ package me.zhengjie.modules.yy.service.dto;
 
 import lombok.Data;
 import me.zhengjie.annotation.Query;
+import me.zhengjie.modules.yy.domain.ReserveVerifyStatus;
+import me.zhengjie.utils.enums.YesNoEnum;
 
 import java.io.Serializable;
 import java.util.Set;
@@ -11,19 +13,16 @@ import java.util.Set;
  * @date 2020-12-24 14:04
  */
 @Data
-public class ReserveCriteria implements Serializable {
+public class ReserveCriteria extends BaseCriteria implements Serializable {
 
     @Query
     private Long id;
 
-    @Query(joinName = "dept", propName = "id")
-    private Long deptId;
-
-    @Query(type=Query.Type.IN, joinName = "dept", propName = "id")
-    private Set<Long> deptIds;
+    @Query
+    private YesNoEnum status;
 
     @Query
-    private String status;
+    private ReserveVerifyStatus verifyStatus;
 
     @Query
     private String date;

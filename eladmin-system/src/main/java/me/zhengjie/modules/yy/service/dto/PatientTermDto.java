@@ -2,6 +2,8 @@ package me.zhengjie.modules.yy.service.dto;
 
 import lombok.Getter;
 import lombok.Setter;
+import me.zhengjie.base.BaseDTO;
+import me.zhengjie.modules.yy.domain.PatientTermType;
 
 import java.io.Serializable;
 import java.sql.Timestamp;
@@ -12,17 +14,25 @@ import java.sql.Timestamp;
  */
 @Getter
 @Setter
-public class PatientTermDto implements Serializable {
+public class PatientTermDto extends BaseDTO implements Serializable {
 
     private Long id;
 
+    private Long orgId;
+
+    private Long comId;
+
+    private Long deptId;
+
     private String patItemId;
 
-    private PatientTermDto parent;
+    private String type;
 
-    private PatientDto patient;
+    private Long pid;
 
-    private Long patientId;
+    private PatientSmallDto patient;
+
+    private Long termId;
 
     private String termCode;
 
@@ -36,7 +46,13 @@ public class PatientTermDto implements Serializable {
 
     private String termUnit;
 
+    private Long termDuration;
+
+    private Long termOperatorCount;
+
     private Long price;
+
+    private Integer totalTimes;
 
     private Integer times;
 
@@ -44,15 +60,11 @@ public class PatientTermDto implements Serializable {
 
     private String status;
 
+    private Long duration;
+
+    private Long operatorCount;
+
     private String remark;
-
-    private String createBy;
-
-    private String updatedBy;
-
-    private Timestamp createTime;
-
-    private Timestamp updateTime;
 
     @Override
     public boolean equals(Object o) {

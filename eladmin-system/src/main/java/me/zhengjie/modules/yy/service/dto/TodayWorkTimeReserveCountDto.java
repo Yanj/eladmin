@@ -14,4 +14,16 @@ public class TodayWorkTimeReserveCountDto implements Serializable {
 
     private List<Long> prevCounts;
 
+    private List<Long> initCounts;
+
+    private List<Long> prevInitCounts;
+
+    private List<Long> checkInCounts;
+
+    private List<Long> prevCheckInCounts;
+
+    private List<Long> verifiedCounts;
+
+    private List<Long> prevVerifiedCounts;
+
 }

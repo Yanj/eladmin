@@ -1,6 +1,8 @@
 package me.zhengjie.modules.yy.service.dto;
 
 import lombok.Data;
+import me.zhengjie.annotation.Query;
+import me.zhengjie.utils.enums.YesNoEnum;
 
 import java.io.Serializable;
 
@@ -9,9 +11,10 @@ import java.io.Serializable;
  * @date 2020-12-24 14:04
  */
 @Data
-public class ReserveCountCriteria implements Serializable {
+public class ReserveCountCriteria extends BaseCriteria implements Serializable {
 
-    private Long deptId;
+    @Query
+    private YesNoEnum status;
 
     private String date;
 

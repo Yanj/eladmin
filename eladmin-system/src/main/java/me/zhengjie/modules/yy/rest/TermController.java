@@ -55,14 +55,6 @@ public class TermController {
         return new ResponseEntity<>(HttpStatus.NO_CONTENT);
     }
 
-    @Log("查询所有套餐")
-    @ApiOperation("查询所有套餐")
-    @GetMapping("/list")
-    @AnonymousAccess
-    public ResponseEntity<Object> query(TermCriteria criteria) {
-        return new ResponseEntity<>(termService.queryAll(criteria), HttpStatus.OK);
-    }
-
     @Log("查询套餐")
     @ApiOperation("查询套餐")
     @GetMapping

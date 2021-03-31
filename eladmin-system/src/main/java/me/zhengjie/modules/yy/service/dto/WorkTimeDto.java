@@ -16,13 +16,17 @@ public class WorkTimeDto implements Serializable {
 
     private Long id;
 
-    private DeptSmallDto dept;
+    private Long orgId;
+
+    private Long comId;
 
     private Long deptId;
 
     private String beginTime;
 
     private String endTime;
+
+    private Long duration;
 
     private String status;
 

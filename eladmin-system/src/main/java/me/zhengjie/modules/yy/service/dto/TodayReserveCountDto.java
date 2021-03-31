@@ -14,21 +14,21 @@ public class TodayReserveCountDto implements Serializable {
     /**
      * 总数
      */
-    private int totalCount;
+    private long totalCount;
 
     /**
      * 待处理总数
      */
-    private int preprocessCount;
+    private long preprocessCount;
 
     /**
      * 处理中总数
      */
-    private int processingCount;
+    private long processingCount;
 
     /**
      * 已处理总数
      */
-    private int processedCount;
+    private long processedCount;
 
 }

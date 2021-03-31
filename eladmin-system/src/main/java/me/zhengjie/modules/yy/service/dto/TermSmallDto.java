@@ -29,6 +29,10 @@ public class TermSmallDto implements Serializable {
 
     private String unit;
 
+    private Long duration;
+
+    private Long operatorCount;
+
     private String status;
 
     private String remark;

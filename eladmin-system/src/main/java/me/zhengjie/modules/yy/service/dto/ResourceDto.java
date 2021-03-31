@@ -2,7 +2,6 @@ package me.zhengjie.modules.yy.service.dto;
 
 import lombok.Getter;
 import lombok.Setter;
-import me.zhengjie.modules.system.service.dto.DeptSmallDto;
 
 import java.io.Serializable;
 
@@ -22,9 +21,7 @@ public class ResourceDto implements Serializable {
 
     private Long deptId;
 
-    private ResourceCategoryDto resourceCategory;
-
-    private Long resourceCategoryId;
+    private ResourceCategorySmallDto resourceCategory;
 
     private String name;
 

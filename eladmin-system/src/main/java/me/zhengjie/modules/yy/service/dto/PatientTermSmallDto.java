@@ -2,6 +2,7 @@ package me.zhengjie.modules.yy.service.dto;
 
 import lombok.Getter;
 import lombok.Setter;
+import me.zhengjie.base.BaseDTO;
 
 import java.io.Serializable;
 import java.sql.Timestamp;
@@ -12,7 +13,7 @@ import java.sql.Timestamp;
  */
 @Getter
 @Setter
-public class PatientTermSmallDto implements Serializable {
+public class PatientTermSmallDto extends BaseDTO implements Serializable {
 
     private Long id;
 
@@ -30,21 +31,25 @@ public class PatientTermSmallDto implements Serializable {
 
     private String termUnit;
 
+    private Long termDuration;
+
+    private Long termOperatorCount;
+
     private Long price;
 
+    private Integer totalTimes;
+
     private Integer times;
+
+    private Integer freeTimes;
+
+    private Long duration;
+
+    private Long operatorCount;
 
     private String status;
 
     private String remark;
-
-    private String createBy;
-
-    private String updatedBy;
-
-    private Timestamp createTime;
-
-    private Timestamp updateTime;
 
     @Override
     public boolean equals(Object o) {

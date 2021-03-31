@@ -9,6 +9,8 @@ import me.zhengjie.modules.yy.domain.ResourceGroup;
 import me.zhengjie.modules.yy.service.ResourceGroupService;
 import me.zhengjie.modules.yy.service.dto.ResourceGroupCriteria;
 import me.zhengjie.modules.yy.service.dto.ResourceGroupDto;
+import me.zhengjie.utils.SecurityUtils;
+import me.zhengjie.utils.enums.YesNoEnum;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -17,7 +19,9 @@ import org.springframework.web.bind.annotation.*;
 
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 /**
@@ -40,26 +44,11 @@ public class ResourceGroupController {
         resourceGroupService.download(resourceGroupService.queryAll(criteria), response);
     }
 
-    @Log("查询套餐对应资源分组")
-    @ApiOperation("查询套餐对应资源分组")
-    @GetMapping("/term")
-    @AnonymousAccess
-    public ResponseEntity<Object> query(@RequestParam Long deptId, @RequestParam String termCode) {
-        return new ResponseEntity<>(resourceGroupService.queryByDeptIdAndTermCode(deptId, termCode), HttpStatus.OK);
-    }
-
     @ApiOperation("获取单个资源分组")
     @GetMapping(value = "/{id}")
     @AnonymousAccess
     public ResponseEntity<Object> query(@PathVariable Long id) {
         return new ResponseEntity<>(resourceGroupService.findById(id), HttpStatus.OK);
-    }
-
-    @ApiOperation("查询全部资源分组")
-    @GetMapping("/lazy")
-    @AnonymousAccess
-    public ResponseEntity<Object> list(@RequestParam Long pid, @RequestParam Long deptId) {
-        return new ResponseEntity<>(resourceGroupService.getResourceGroups(pid, deptId), HttpStatus.OK);
     }
 
     @ApiOperation("根据资源分组ID返回所有子节点ID，包含自身ID")
@@ -78,14 +67,6 @@ public class ResourceGroupController {
         ResourceGroupDto resourceGroupDto = resourceGroupService.findById(resources.getId());
         resourceGroupService.updateResourceCategory(resources, resourceGroupDto);
         return new ResponseEntity<>(HttpStatus.NO_CONTENT);
-    }
-
-    @Log("查询资源分组")
-    @ApiOperation("查询资源分组")
-    @GetMapping("/list")
-    @AnonymousAccess
-    public ResponseEntity<Object> query(ResourceGroupCriteria criteria) {
-        return new ResponseEntity<>(resourceGroupService.queryAll(criteria), HttpStatus.OK);
     }
 
     @Log("查询资源分组")

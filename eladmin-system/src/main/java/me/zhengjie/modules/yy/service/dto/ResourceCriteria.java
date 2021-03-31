@@ -2,6 +2,7 @@ package me.zhengjie.modules.yy.service.dto;
 
 import lombok.Data;
 import me.zhengjie.annotation.Query;
+import me.zhengjie.utils.enums.YesNoEnum;
 
 import java.io.Serializable;
 
@@ -10,12 +11,18 @@ import java.io.Serializable;
  * @date 2020-12-24 12:55
  */
 @Data
-public class ResourceCriteria implements Serializable {
+public class ResourceCriteria extends BaseCriteria implements Serializable {
 
     @Query
     private Long id;
 
-    @Query(joinName = "dept", propName = "id")
-    private Long deptId;
+    @Query(blurry = "name")
+    private String blurry;
+
+    @Query
+    private String name;
+
+    @Query
+    private YesNoEnum status;
 
 }

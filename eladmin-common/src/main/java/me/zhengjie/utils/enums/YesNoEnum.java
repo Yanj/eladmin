@@ -1,5 +1,7 @@
 package me.zhengjie.utils.enums;
 
+import org.springframework.lang.NonNullApi;
+
 import java.io.Serializable;
 
 /**

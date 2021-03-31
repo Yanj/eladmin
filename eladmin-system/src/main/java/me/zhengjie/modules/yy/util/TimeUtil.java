@@ -2,6 +2,7 @@ package me.zhengjie.modules.yy.util;
 
 import java.time.DayOfWeek;
 import java.time.LocalDate;
+import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
 import java.time.temporal.TemporalUnit;
@@ -14,6 +15,20 @@ import java.util.List;
  * @date 2021-01-11 14:43
  */
 public class TimeUtil {
+
+    /**
+     * 时间计算
+     *
+     * @param time 时间
+     * @param minutes 增加的分钟
+     * @return .
+     */
+    public static String timeAdd(String time, long minutes) {
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("HH:mm");
+        LocalTime localTime = LocalTime.parse(time, formatter);
+        localTime = localTime.plus(minutes, ChronoUnit.MINUTES);
+        return localTime.format(formatter);
+    }
 
     /**
      * 获取日期范围

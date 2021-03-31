@@ -36,15 +36,15 @@ public interface TermRepository extends JpaRepository<Term, Long>, JpaSpecificat
      * @param comId .
      * @return .
      */
-    @Query(value = "from Term where comId = ?1 and status = 1")
-    List<Term> findAllByComId(Long comId);
+    @Query(value = "from Term where orgId = ?1 and comId = ?2 and status = 1")
+    List<Term> findAllByComId(Long orgId, Long comId);
 
     /**
      * 根据 部门ID 查询套餐
      * @param deptId .
      * @return .
      */
-    @Query(value = "from Term where deptId = ?1 and status = 1")
+    @Query(value = "from Term where orgId = ?1 and comId = ?2 and deptId = ?3 and status = 1")
     List<Term> findAllByDeptId(Long deptId);
 
 }

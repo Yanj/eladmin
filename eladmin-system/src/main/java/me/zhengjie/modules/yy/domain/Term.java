@@ -28,24 +28,27 @@ public class Term implements Serializable {
     @ApiModelProperty(value = "ID")
     private Long id;
 
-    @JoinColumn(name = "org_id")
+    @Column(name = "org_id")
     @ApiModelProperty(value = "组织ID")
     private Long orgId;
 
-    @JoinColumn(name = "com_id")
+    @Column(name = "com_id")
     @ApiModelProperty(value = "公司ID")
     private Long comId;
 
-    @JoinColumn(name = "dept_id")
+    @Column(name = "dept_id")
     @ApiModelProperty(value = "部门ID")
     private Long deptId;
 
+    @Column(name = "code")
     @ApiModelProperty(value = "外部系统ID")
     private String code;
 
+    @Column(name = "name")
     @ApiModelProperty(value = "名称")
     private String name;
 
+    @Column(name = "price")
     @ApiModelProperty(value = "价格")
     private Long price;
 
@@ -53,16 +56,28 @@ public class Term implements Serializable {
     @ApiModelProperty(value = "原价")
     private Long originalPrice;
 
+    @Column(name = "times")
     @ApiModelProperty(value = "次数")
     private Integer times;
 
+    @Column(name = "unit")
     @ApiModelProperty(value = "单位")
     private String unit;
 
+    @Column(name = "duration")
+    @ApiModelProperty(value = "时长")
+    private Long duration;
+
+    @Column(name = "operator_count")
+    @ApiModelProperty(value = "操作员数量")
+    private Long operatorCount;
+
     @Enumerated
+    @Column(name = "status")
     @ApiModelProperty(value = "状态")
     private YesNoEnum status;
 
+    @Column(name = "remark")
     @ApiModelProperty(value = "备注")
     private String remark;
 

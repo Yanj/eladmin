@@ -79,5 +79,5 @@ public interface ReserveResourceService {
      * @param criteria .
      * @return .
      */
-    List<Map<String, Object>> queryReserveCount(ReserveCountCriteria criteria);
+    List<Map<String, Object>> queryReserveCount(ReserveCountCriteria criteria) throws Exception;
 }

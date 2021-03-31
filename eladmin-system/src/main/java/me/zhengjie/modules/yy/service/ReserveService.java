@@ -17,12 +17,13 @@ public interface ReserveService {
 
     /**
      * 查询医院一段时间内每日套餐预约次数汇总
-     * @param deptId .
+     *
+     * @param comId .
      * @param date .
      * @param days .
      * @return
      */
-    List<Map<String, Object>> queryTermCount(Long deptId, String date, int days);
+    List<Map<String, Object>> queryTermCount(Long comId, String date, int days);
 
     /**
      * 自动取消
@@ -135,14 +136,14 @@ public interface ReserveService {
      *
      * @return .
      */
-    TodayReserveCountDto queryTodayCount(Long deptId);
+    WeekReserveCountDto queryTodayCount(ReserveCriteria criteria);
 
     /**
      * 查询一周的预约统计
      *
      * @return .
      */
-    List<WeekReserveCountDto> queryWeekCount(Long deptId);
+    List<WeekReserveCountDto> queryWeekCount(ReserveCriteria criteria);
 
     /**
      * 查询今日预约统计, 按时段汇总
@@ -150,12 +151,5 @@ public interface ReserveService {
      * @return .
      */
     TodayWorkTimeReserveCountDto queryTodayCountGroupByWorkTime(Long deptId);
-
-    /**
-     * 查询今日资源统计, 按时段汇总
-     *
-     * @return .
-     */
-    List<List<Long>> queryTodayCountGroupByWorkTimeAndResourceGroup(Long deptId);
 
 }

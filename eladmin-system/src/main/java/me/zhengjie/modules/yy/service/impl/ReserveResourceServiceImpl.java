@@ -1,18 +1,24 @@
 package me.zhengjie.modules.yy.service.impl;
 
 import lombok.RequiredArgsConstructor;
-import me.zhengjie.modules.yy.domain.*;
-import me.zhengjie.modules.yy.repository.*;
+import me.zhengjie.exception.BadRequestException;
+import me.zhengjie.modules.security.service.dto.JwtUserDto;
+import me.zhengjie.modules.yy.domain.ReserveResource;
+import me.zhengjie.modules.yy.domain.ReserveResourceGroupCount;
+import me.zhengjie.modules.yy.domain.ResourceGroupCount;
+import me.zhengjie.modules.yy.domain.WorkTime;
+import me.zhengjie.modules.yy.repository.ReserveResourceRepository;
+import me.zhengjie.modules.yy.repository.ResourceGroupRepository;
+import me.zhengjie.modules.yy.repository.WorkTimeRepository;
 import me.zhengjie.modules.yy.service.ReserveResourceService;
 import me.zhengjie.modules.yy.service.dto.ReserveCountCriteria;
 import me.zhengjie.modules.yy.service.dto.ReserveResourceCriteria;
 import me.zhengjie.modules.yy.service.dto.ReserveResourceDto;
+import me.zhengjie.modules.yy.service.dto.WorkTimeCriteria;
 import me.zhengjie.modules.yy.service.mapstruct.ReserveResourceMapper;
 import me.zhengjie.modules.yy.util.TimeUtil;
-import me.zhengjie.utils.FileUtil;
-import me.zhengjie.utils.PageUtil;
-import me.zhengjie.utils.QueryHelp;
-import me.zhengjie.utils.ValidationUtil;
+import me.zhengjie.utils.*;
+import me.zhengjie.utils.enums.YesNoEnum;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -21,7 +27,9 @@ import org.springframework.transaction.annotation.Transactional;
 
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
-import java.text.SimpleDateFormat;
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
+import java.time.temporal.ChronoUnit;
 import java.util.*;
 
 /**
@@ -37,17 +45,17 @@ public class ReserveResourceServiceImpl implements ReserveResourceService {
 
     private final WorkTimeRepository workTimeRepository;
     private final ResourceGroupRepository resourceGroupRepository;
-    private final ReserveResourceGroupCountRepository reserveResourceGroupCountRepository;
-    private final ResourceGroupCountRepository resourceGroupCountRepository;
 
     @Override
     public Map<String, Object> queryAll(ReserveResourceCriteria criteria, Pageable pageable) {
+        criteria.setStatus(YesNoEnum.YES);
         Page<ReserveResource> page = repository.findAll((root, criteriaQuery, criteriaBuilder) -> QueryHelp.getPredicate(root, criteria, criteriaBuilder), pageable);
         return PageUtil.toPage(page.map(mapper::toDto));
     }
 
     @Override
     public List<ReserveResourceDto> queryAll(ReserveResourceCriteria criteria) {
+        criteria.setStatus(YesNoEnum.YES);
         return mapper.toDto(repository.findAll((root, criteriaQuery, criteriaBuilder) -> QueryHelp.getPredicate(root, criteria, criteriaBuilder)));
     }
 
@@ -62,6 +70,7 @@ public class ReserveResourceServiceImpl implements ReserveResourceService {
     @Transactional(rollbackFor = Exception.class)
     @Override
     public ReserveResourceDto create(ReserveResource resources) {
+        resources.setStatus(YesNoEnum.YES);
         return mapper.toDto(repository.save(resources));
     }
 
@@ -78,7 +87,9 @@ public class ReserveResourceServiceImpl implements ReserveResourceService {
     @Override
     public void deleteAll(Long[] ids) {
         for (Long id : ids) {
-            repository.deleteById(id);
+            ReserveResource instance = repository.findById(id).orElseGet(ReserveResource::new);
+            ValidationUtil.isNull(instance.getId(), "ReserveResource", "id", id);
+            repository.save(instance);
         }
     }
 
@@ -87,30 +98,57 @@ public class ReserveResourceServiceImpl implements ReserveResourceService {
         List<Map<String, Object>> list = new ArrayList<>();
         for (ReserveResourceDto item : all) {
             Map<String, Object> map = new LinkedHashMap<>();
-            map.put("id", item.getId());
+            map.put("ID", item.getId());
+            map.put("预约ID", item.getReserve().getId());
+            map.put("日期", item.getDate());
+            map.put("工作时段ID", item.getWorkTime().getId());
+            map.put("资源分类ID", item.getResourceCategory().getId());
+            map.put("资源分组ID", item.getResourceGroup().getId());
+            map.put("资源ID", item.getResource().getId());
+            map.put("状态", item.getStatus());
             list.add(map);
         }
         FileUtil.downloadExcel(list, response);
     }
 
     @Override
-    public List<Map<String, Object>> queryReserveCount(ReserveCountCriteria criteria) {
-        final Long deptId = criteria.getDeptId();
-        // 查询工作时间段列表
-        List<WorkTime> workTimeList = workTimeRepository.findAllByDeptIdOrderByBeginTime(deptId);
-        // 查询资源组列表
-        List<ResourceGroup> resourceGroupList = resourceGroupRepository.findAllByDeptId(deptId);
-        // 查询日期列表
-        List<String> dateList = getReserveDateList();
-        // 查询资源统计列表
-        List<ReserveResourceGroupCount> reserveResourceGroupCountList = reserveResourceGroupCountRepository.findAllByPkDeptIdAndPkDate(deptId, dateList.get(0), dateList.get(dateList.size() - 1));
-        // 查询可用资源最小数量
-        List<ResourceGroupCount> resourceGroupCountList = resourceGroupCountRepository.findAllByDeptId(deptId);
-
-        List<String> dateRange = null;
-        if (StringUtils.isNotEmpty(criteria.getBeginDate()) && StringUtils.isNotEmpty(criteria.getEndDate())) {
-            dateRange = TimeUtil.getDateRange(criteria.getBeginDate(), criteria.getEndDate());
+    public List<Map<String, Object>> queryReserveCount(ReserveCountCriteria criteria) throws Exception {
+        JwtUserDto user = (JwtUserDto) SecurityUtils.getCurrentUser();
+        if (!user.isAdmin()) {
+            criteria.setUser(user);
         }
+        if (null == criteria.getComId()) {
+            throw new BadRequestException("comId 不能为空");
+        }
+
+        // 查询工作时间段列表
+        WorkTimeCriteria workTimeCriteria = new WorkTimeCriteria();
+        workTimeCriteria.setOrgId(user.getOrgId());
+        if (user.isAdmin()) {
+            workTimeCriteria.setComId(criteria.getComId());
+        } else {
+            workTimeCriteria.setComId(user.getComId());
+        }
+        workTimeCriteria.setStatus(YesNoEnum.YES);
+        List<WorkTime> workTimeList = workTimeRepository.findAll((root, criteriaQuery, criteriaBuilder) -> QueryHelp.getPredicate(root,
+                workTimeCriteria, criteriaBuilder));
+
+        if (StringUtils.isEmpty(criteria.getBeginDate())) {
+            criteria.setBeginDate(TimeUtil.getCurrentDate());
+        }
+        if (StringUtils.isEmpty(criteria.getEndDate())) {
+            criteria.setEndDate(TimeUtil.getCurrentDate(7));
+        }
+
+        // 查询日期列表
+        List<String> dateList = getReserveDateList(criteria.getBeginDate(), criteria.getEndDate());
+        // 查询资源统计列表
+        List<ReserveResourceGroupCount> reserveResourceGroupCountList = repository.findResourceGroupCountByComIdAndDate(criteria.getComId(),
+                dateList.get(0),
+                dateList.get(dateList.size() - 1));
+
+        // 查询可用资源最小数量
+        List<ResourceGroupCount> resourceGroupCountList = resourceGroupRepository.findCountByComId(criteria.getComId());
 
         List<Map<String, Object>> list = new ArrayList<>();
         // 遍历日期
@@ -153,34 +191,28 @@ public class ReserveResourceServiceImpl implements ReserveResourceService {
                         if (null == reserveResourceGroupCount) {
                             continue;
                         }
-                        if (!Objects.equals(deptId, reserveResourceGroupCount.getPk().getDeptId())) {
+                        if (!StringUtils.equals(date, reserveResourceGroupCount.getDate())) {
                             continue;
                         }
-                        if (!StringUtils.equals(date, reserveResourceGroupCount.getPk().getDate())) {
+                        if (!Objects.equals(workTime.getId(), reserveResourceGroupCount.getWorkTimeId())) {
                             continue;
                         }
-                        if (!Objects.equals(workTime.getId(), reserveResourceGroupCount.getPk().getWorkTimeId())) {
-                            continue;
-                        }
-                        if (!Objects.equals(resourceGroupCount.getId(), reserveResourceGroupCount.getPk().getResourceGroupId())) {
+                        if (!Objects.equals(resourceGroupCount.getResourceGroupId(), reserveResourceGroupCount.getResourceGroupId())) {
                             continue;
                         }
                         useCount = reserveResourceGroupCount;
                         break;
                     }
-                    int usedCount = 0;
-                    if (null != useCount && null != useCount.getCount()) {
+                    long usedCount = 0;
+                    if (null != useCount) {
                         usedCount = useCount.getCount();
                     }
-                    usedMap.put(resourceGroupCount.getId().toString(), usedCount);
+                    usedMap.put(resourceGroupCount.getResourceGroupId().toString(), usedCount);
 
-                    int count = 0;
-                    if (null != resourceGroupCount.getCount()) {
-                        count = resourceGroupCount.getCount();
-                    }
-                    countMap.put(resourceGroupCount.getId().toString(), count);
+                    long count = resourceGroupCount.getMin();
+                    countMap.put(resourceGroupCount.getResourceGroupId().toString(), count);
 
-                    leftMap.put(resourceGroupCount.getId().toString(), count - usedCount);
+                    leftMap.put(resourceGroupCount.getResourceGroupId().toString(), count - usedCount);
                 }
 
                 item.put("usedMap", usedMap);
@@ -194,14 +226,17 @@ public class ReserveResourceServiceImpl implements ReserveResourceService {
         return list;
     }
 
-    private List<String> getReserveDateList() {
-        SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
-        Calendar calendar = Calendar.getInstance();
+    private List<String> getReserveDateList(String beginDate, String endDate) throws Exception {
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+        LocalDate date = LocalDate.parse(beginDate, formatter);
+        LocalDate end = LocalDate.parse(endDate, formatter);
         List<String> dateList = new ArrayList<>();
-        for (int i = 0; i < 14; i++) {
-            dateList.add(dateFormat.format(calendar.getTime()));
-            calendar.add(Calendar.DAY_OF_MONTH, 1);
-        }
+        int i = 0;
+        do {
+            dateList.add(date.format(formatter));
+            date = date.plus(1, ChronoUnit.DAYS);
+            i++;
+        } while(date.compareTo(end) < 0 && i < 14);
         return dateList;
     }
 

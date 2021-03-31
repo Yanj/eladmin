@@ -3,6 +3,7 @@ package me.zhengjie.modules.yy.service.dto;
 import lombok.Getter;
 import lombok.Setter;
 import me.zhengjie.modules.system.service.dto.DeptSmallDto;
+import me.zhengjie.utils.enums.YesNoEnum;
 
 import java.io.Serializable;
 

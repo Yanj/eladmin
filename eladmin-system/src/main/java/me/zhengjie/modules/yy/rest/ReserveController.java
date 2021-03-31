@@ -42,16 +42,16 @@ public class ReserveController {
     @ApiOperation("查询今日预约统计")
     @GetMapping("/todayCount")
     @AnonymousAccess
-    public ResponseEntity<Object> queryTodayCount(@RequestParam("deptId") Long deptId) {
-        return new ResponseEntity<>(reserveService.queryTodayCount(deptId), HttpStatus.OK);
+    public ResponseEntity<Object> queryTodayCount(ReserveCriteria criteria) {
+        return new ResponseEntity<>(reserveService.queryTodayCount(criteria), HttpStatus.OK);
     }
 
     @Log("查询周预约统计")
     @ApiOperation("查询周预约统计")
     @GetMapping("/weekCount")
     @AnonymousAccess
-    public ResponseEntity<Object> queryWeekCount(@RequestParam("deptId") Long deptId) {
-        return new ResponseEntity<>(reserveService.queryWeekCount(deptId), HttpStatus.OK);
+    public ResponseEntity<Object> queryWeekCount(ReserveCriteria criteria) {
+        return new ResponseEntity<>(reserveService.queryWeekCount(criteria), HttpStatus.OK);
     }
 
     @Log("查询今日工作时段预约统计")

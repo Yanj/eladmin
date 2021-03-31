@@ -3,21 +3,22 @@ package me.zhengjie.modules.yy.service.impl;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import me.zhengjie.domain.vo.SmsVo;
+import me.zhengjie.exception.BadRequestException;
 import me.zhengjie.modules.security.service.dto.JwtUserDto;
 import me.zhengjie.modules.system.service.DeptService;
 import me.zhengjie.modules.system.service.dto.RoleSmallDto;
-import me.zhengjie.modules.system.service.mapstruct.DeptMapper;
 import me.zhengjie.modules.yy.domain.*;
 import me.zhengjie.modules.yy.repository.*;
+import me.zhengjie.modules.yy.service.PatientService;
+import me.zhengjie.modules.yy.service.PatientTermService;
 import me.zhengjie.modules.yy.service.ReserveService;
+import me.zhengjie.modules.yy.service.ResourceCategoryService;
 import me.zhengjie.modules.yy.service.dto.*;
-import me.zhengjie.modules.yy.service.mapstruct.ReserveMapper;
-import me.zhengjie.modules.yy.service.mapstruct.ResourceSmallMapper;
-import me.zhengjie.modules.yy.service.mapstruct.TermSmallMapper;
-import me.zhengjie.modules.yy.service.mapstruct.WorkTimeSmallMapper;
+import me.zhengjie.modules.yy.service.mapstruct.*;
 import me.zhengjie.modules.yy.util.TimeUtil;
 import me.zhengjie.service.SmsChannelService;
 import me.zhengjie.utils.*;
+import me.zhengjie.utils.enums.YesNoEnum;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -26,7 +27,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
-import java.math.BigInteger;
 import java.sql.Timestamp;
 import java.time.LocalDateTime;
 import java.util.*;
@@ -44,10 +44,17 @@ public class ReserveServiceImpl implements ReserveService {
     private final ReserveMapper mapper;
 
     private final PatientRepository patientRepository;
+    private final PatientService patientService;
+    private final PatientMapper patientMapper;
+
     private final PatientTermRepository patientTermRepository;
+    private final PatientTermService patientTermService;
+    private final PatientTermMapper patientTermMapper;
+
     private final PatientTermLogRepository patientTermLogRepository;
     private final TermRepository termRepository;
     private final ResourceGroupRepository resourceGroupRepository;
+    private final ResourceCategoryService resourceCategoryService;
     private final ResourceCategoryRepository resourceCategoryRepository;
     private final ResourceRepository resourceRepository;
     private final ReserveResourceRepository reserveResourceRepository;
@@ -59,26 +66,44 @@ public class ReserveServiceImpl implements ReserveService {
     private final WorkTimeSmallMapper workTimeSmallMapper;
     private final TermSmallMapper termSmallMapper;
 
+    private final DeptService deptService;
     private final SmsChannelService smsChannelService;
 
-    private final DeptService deptService;
-    private final DeptMapper deptMapper;
-
     @Override
-    public List<Map<String, Object>> queryTermCount(Long deptId, String _date, int days) {
-        if (null == deptId) {
-            throw new RuntimeException("部门ID不能为空");
-        }
+    public List<Map<String, Object>> queryTermCount(Long _comId, String _date, int days) {
         if (days < 0) {
             throw new RuntimeException("days必须大于等于0");
         }
         String beginDate = TimeUtil.getDate(_date, 0);
         String endDate = TimeUtil.getDate(_date, days);
 
+        Long orgId;
+        Long comId;
+
+        JwtUserDto user = (JwtUserDto) SecurityUtils.getCurrentUser();
+        orgId = user.getOrgId();
+        if (user.isAdmin()) {
+            comId = _comId;
+        } else {
+            comId = user.getComId();
+        }
+
         // 查询所有套餐
-        List<Term> termList = termRepository.findAllByComId(deptId);
+        TermCriteria termCriteria = new TermCriteria();
+        termCriteria.setOrgId(orgId);
+        termCriteria.setComId(comId);
+        termCriteria.setStatus(YesNoEnum.YES);
+        // ... 查询
+        List<Term> termList = termRepository.findAll((root, criteriaQuery, criteriaBuilder) -> QueryHelp.getPredicate(root, termCriteria,
+                criteriaBuilder));
+
         // 查询套餐预约统计
-        List<Map<String, Object>> termCountList = repository.queryTermCount(deptId, beginDate, endDate);
+        List<ReserveTermCount> termCountList;
+        if (null != comId) {
+            termCountList = repository.queryTermCountByComId(comId, beginDate, endDate);
+        } else {
+            termCountList = repository.queryTermCountByOrgId(orgId, beginDate, endDate);
+        }
         // 日期范围
         List<String> dateList = TimeUtil.getDateRange(beginDate, endDate);
 
@@ -89,10 +114,9 @@ public class ReserveServiceImpl implements ReserveService {
             List<Long> data = new ArrayList<>();
             for (String date : dateList) {
                 long count = 0;
-                for (Map<String, Object> termCount : termCountList) {
-                    if (Objects.equals(termCount.get("term_id").toString(), term.getId().toString()) && StringUtils.equals(termCount.get("date").toString(),
-                            date)) {
-                        count = Long.parseLong(termCount.get("count").toString());
+                for (ReserveTermCount termCount : termCountList) {
+                    if (term.getId().equals(termCount.getTermId()) && StringUtils.equals(date, termCount.getDate())) {
+                        count = termCount.getCount();
                         break;
                     }
                 }
@@ -108,7 +132,7 @@ public class ReserveServiceImpl implements ReserveService {
     @Override
     public void automaticCancel() {
         String date = TimeUtil.getCurrentDate();
-        List<Reserve> list = repository.findByStatusAndDateLessThan("init", date);
+        List<Reserve> list = repository.findByStatusAndDate(ReserveVerifyStatus.init, date);
         if (null != list && !list.isEmpty()) {
             for (Reserve reserve : list) {
                 try {
@@ -122,71 +146,71 @@ public class ReserveServiceImpl implements ReserveService {
 
     @Override
     public Map<String, Object> queryAll(ReserveCriteria criteria, Pageable pageable) {
-//        if (criteria.getDeptId() != null) {
-//            JwtUserDto user = (JwtUserDto) SecurityUtils.getCurrentUser();
-//            DeptDto dept;
-//            // 只有管理员才允许切换不同的部门进行查询, 其余用户则只允许查询用户所属部门. 换句话说就是用户不能属于总部
-//            // 如果当前用户是管理员
-//            if (user.getUser().getIsAdmin()) {
-//                // 查询要查询的部门级别
-//                dept = deptService.findById(criteria.getDeptId());
-//            } else {
-//                // 查询当前用户的部门级别
-//                dept = deptService.findById(user.getUser().getDept().getId());
-//            }
-//            // 如果部门级别大于等于2, 也就是子部门
-//            if (dept.getLevel() >= 2) {
-//                // 仅查询当前部门
-//                criteria.setDeptId(dept.getId());
-//            }
-//            // 否则查询医院和子部门数据
-//            else {
-//                List<Dept> queryList = new ArrayList<>(1);
-//                queryList.add(deptMapper.toEntity(dept));
-//                List<Long> deptIds = deptService.getDeptChildren(queryList);
-//                criteria.setDeptId(null);
-//                criteria.setDeptIds(new HashSet<>(deptIds));
-//            }
-//        }
-
+        JwtUserDto user = (JwtUserDto) SecurityUtils.getCurrentUser();
+        criteria.setUser(user);
+        if (!user.isAdmin()) {
+            criteria.setStatus(YesNoEnum.YES);
+        }
         Page<Reserve> page = repository.findAll((root, criteriaQuery, criteriaBuilder) -> QueryHelp.getPredicate(root, criteria, criteriaBuilder), pageable);
         return PageUtil.toPage(page.map(mapper::toDto));
     }
 
     @Override
     public List<ReserveDto> queryAll(ReserveCriteria criteria) {
+        JwtUserDto user = (JwtUserDto) SecurityUtils.getCurrentUser();
+        criteria.setUser(user);
+        if (!user.isAdmin()) {
+            criteria.setStatus(YesNoEnum.YES);
+        }
         return mapper.toDto(repository.findAll((root, criteriaQuery, criteriaBuilder) -> QueryHelp.getPredicate(root, criteria, criteriaBuilder)));
     }
 
     @Override
     public ReserveCountDto queryReserveCount(ReserveCountCriteria criteria) {
-        if (null == criteria.getDeptId()) {
-            throw new RuntimeException("部门ID不能为空");
+        Long orgId;
+        Long comId;
+
+        JwtUserDto user = (JwtUserDto) SecurityUtils.getCurrentUser();
+        orgId = user.getOrgId();
+        comId = user.getComId();
+        if (user.isAdmin()) {
+            orgId = criteria.getOrgId();
+            comId = criteria.getComId();
         }
+        if (null == orgId) {
+            orgId = user.getOrgId();
+        }
+        if (null == comId) {
+            comId = user.getComId();
+        }
+        if (null == comId) {
+            throw new BadRequestException("公司 ID 不能为空");
+        }
+
         if (StringUtils.isEmpty(criteria.getDate())) {
             throw new RuntimeException("日期不能为空");
         }
         // 查询时间
-        List<WorkTime> workTimeList = workTimeRepository.findAllByDeptIdOrderByBeginTime(criteria.getDeptId());
+        List<WorkTime> workTimeList = workTimeRepository.findByComId(comId);
 
         // 查询套餐
-        List<Term> termList = termRepository.findAllByComId(criteria.getDeptId());
+        List<Term> termList = termRepository.findAllByComId(orgId, comId);
 
         // 统计
-        List<Map<String, Object>> countList;
+        List<ReserveCount> countList;
         if (!StringUtils.isEmpty(criteria.getDate()) && null != criteria.getTermId() && null != criteria.getResourceGroupId()) {
-            countList = repository.queryReserveCountByDateAndTermIdAndResourceGroupId(criteria.getDeptId(), criteria.getDate(), criteria.getTermId(), criteria.getResourceGroupId());
+            countList = repository.queryReserveCount(comId, criteria.getDate(), criteria.getTermId(), criteria.getResourceGroupId());
         } else if (!StringUtils.isEmpty(criteria.getDate()) && null != criteria.getTermId()) {
-            countList = repository.queryReserveCountByDateAndTermId(criteria.getDeptId(), criteria.getDate(), criteria.getTermId());
+            countList = repository.queryReserveCount(comId, criteria.getDate(), criteria.getTermId());
         } else if (!StringUtils.isEmpty(criteria.getDate())) {
-            countList = repository.queryReserveCountByDate(criteria.getDeptId(), criteria.getDate());
+            countList = repository.queryReserveCount(comId, criteria.getDate());
         } else {
-            countList = repository.queryReserveCount(criteria.getDeptId());
+            countList = repository.queryReserveCount(comId);
         }
 
         Set<String> dateSet = new HashSet<>();
-        for (Map<String, Object> countItem : countList) {
-            String date = (String) countItem.get("date");
+        for (ReserveCount countItem : countList) {
+            String date = countItem.getDate();
             if (StringUtils.isEmpty(date)) {
                 continue;
             }
@@ -211,11 +235,11 @@ public class ReserveServiceImpl implements ReserveService {
                 for (TermSmallDto term : res.getTerms()) {
                     // 查找统计结果
                     Long count = null;
-                    for (Map<String, Object> countItem : countList) {
-                        String countItemDate = (String)countItem.get("date");
-                        BigInteger countItemWorkTimeId = (BigInteger)countItem.get("work_time_id");
-                        BigInteger countItemTermId = (BigInteger)countItem.get("term_id");
-                        BigInteger countItemCount = (BigInteger)countItem.get("count");
+                    for (ReserveCount countItem : countList) {
+                        String countItemDate = countItem.getDate();
+                        Long countItemWorkTimeId = countItem.getWorkTimeId();
+                        Long countItemTermId = countItem.getTermId();
+                        Long countItemCount = countItem.getCount();
                         if (Objects.equals(date, countItemDate) &&
                                 Objects.equals(workTime.getId().toString(), countItemWorkTimeId.toString()) &&
                                 Objects.equals(term.getId().toString(), countItemTermId.toString())) {
@@ -321,7 +345,7 @@ public class ReserveServiceImpl implements ReserveService {
         }
 
         ReserveDto reserve = res.get(0);
-        PatientDto patient = reserve.getPatient();
+        PatientDto patient = patientService.findById(reserve.getPatient().getId());
 
         // 发送短信
         Sms sms = new Sms();
@@ -348,16 +372,118 @@ public class ReserveServiceImpl implements ReserveService {
     public ReserveDto create(Reserve resources, boolean needSms) throws Exception {
         JwtUserDto user = (JwtUserDto) SecurityUtils.getCurrentUser();
         if (null == user) {
-            throw new RuntimeException("获取用户失败");
+            throw new BadRequestException("获取用户失败");
         }
-        // 判断部门
-        if (null == resources.getDept() || null == resources.getDept().getId()) {
-            throw new RuntimeException("部门不能为空");
+        if (!user.isAdmin()) {
+            resources.setOrgId(user.getOrgId());
+            resources.setComId(user.getComId());
+            resources.setDeptId(user.getDeptId());
         }
+        if (resources.getOrgId() == null) {
+            throw new BadRequestException("组织Id不能为空");
+        }
+        deptService.findById(resources.getOrgId());
+
+        if (resources.getComId() == null) {
+            throw new BadRequestException("公司Id不能为空");
+        }
+        deptService.findById(resources.getComId());
+
+        // 如果传入了部门 ID, 检查部门 ID
+        if (null != resources.getDeptId()) {
+            deptService.findById(resources.getDeptId());
+        }
+
+        // 获取患者套餐
+        PatientTerm patientTerm = resources.getPatientTerm();
+        if (null == patientTerm || null == patientTerm.getId()) {
+            // 判断是否传入套餐
+            Term term = resources.getTerm();
+            if (null == term || null == term.getId()) {
+                throw new BadRequestException("套餐不能为空");
+            }
+            term = termRepository.findById(term.getId()).orElseGet(Term::new);
+            if (null == term.getId()) {
+                throw new BadRequestException("套餐不存在");
+            }
+            resources.setTerm(term);
+
+            // 新增外部患者
+            Patient patient = resources.getPatient();
+            if (null == patient) {
+                throw new BadRequestException("患者信息不能为空");
+            }
+            if (StringUtils.isEmpty(patient.getName())) {
+                throw new BadRequestException("患者姓名不能为空");
+            }
+            if (StringUtils.isEmpty(patient.getPhone())) {
+                throw new BadRequestException("患者电话不能为空");
+            }
+            PatientCriteria patientCriteria = new PatientCriteria();
+            patientCriteria.setOrgId(resources.getOrgId());
+            patientCriteria.setComId(resources.getComId());
+            patientCriteria.setDeptId(resources.getDeptId());
+            patientCriteria.setPhone(patient.getPhone());
+            List<PatientDto> patientList = patientService.queryAll(patientCriteria);
+            if (patientList.isEmpty()) {
+                Patient patientInstance = new Patient();
+                patientInstance.setOrgId(resources.getOrgId());
+                patientInstance.setComId(resources.getComId());
+                patientInstance.setDeptId(resources.getDeptId());
+                patientInstance.setSource(PatientSourceEnum.MEITUAN);
+                patientInstance.setName(patient.getName());
+                patientInstance.setPhone(patient.getPhone());
+                patientInstance.setStatus(YesNoEnum.YES);
+                patient = patientMapper.toEntity(patientService.create(patientInstance));
+            } else {
+                patient = patientMapper.toEntity(patientList.get(0));
+            }
+            if (null == patient || null == patient.getId()) {
+                throw new BadRequestException("患者信息异常");
+            }
+            resources.setPatient(patient);
+
+            // 新增免费套餐
+            PatientTerm patientTermInstance = new PatientTerm();
+            patientTermInstance.setOrgId(resources.getOrgId());
+            patientTermInstance.setComId(resources.getComId());
+            patientTermInstance.setDeptId(resources.getDeptId());
+            patientTermInstance.setType(PatientTermType.free);
+            patientTermInstance.setPatient(patient);
+            patientTermInstance.setTermId(term.getId());
+            patientTermInstance.setTermCode(term.getCode());
+            patientTermInstance.setTermName(term.getName());
+            patientTermInstance.setTermPrice(term.getPrice());
+            patientTermInstance.setTermOriginalPrice(term.getOriginalPrice());
+            patientTermInstance.setTermTimes(term.getTimes());
+            patientTermInstance.setTermUnit(term.getUnit());
+            patientTermInstance.setTermDuration(term.getDuration());
+            patientTermInstance.setTermOperatorCount(term.getOperatorCount());
+            patientTermInstance.setPrice(0L);
+            patientTermInstance.setTotalTimes(1);
+            patientTermInstance.setTimes(1);
+            patientTermInstance.setDuration(term.getDuration());
+            patientTermInstance.setOperatorCount(term.getOperatorCount());
+            patientTermInstance.setStatus(YesNoEnum.YES);
+            patientTerm = patientTermMapper.toEntity(patientTermService.create(patientTermInstance));
+            if (null == patientTerm || null == patientTerm.getId()) {
+                throw new BadRequestException("患者套餐不能为空");
+            }
+            resources.setPatientTerm(patientTerm);
+        }
+        patientTerm = patientTermRepository.getPatientTermForUpdate(patientTerm.getId());
+        if (null == patientTerm) {
+            throw new RuntimeException("患者套餐不存在");
+        }
+        if (patientTerm.getTimes() <= 0) {
+            throw new RuntimeException("剩余次数不足");
+        }
+
         // 判断日期
         if (StringUtils.isEmpty(resources.getDate())) {
             throw new RuntimeException("日期不能为空");
         }
+
         // 判断时段
         if (null == resources.getWorkTime() || null == resources.getWorkTime().getId()) {
             throw new RuntimeException("时段不能为空");
@@ -366,23 +492,27 @@ public class ReserveServiceImpl implements ReserveService {
         if (null == workTime.getId()) {
             throw new RuntimeException("时段不存在");
         }
+        resources.setWorkTime(workTime);
         if (StringUtils.isEmpty(resources.getBeginTime())) {
             resources.setBeginTime(workTime.getBeginTime());
         }
         if (StringUtils.isEmpty(resources.getEndTime())) {
-            resources.setEndTime(workTime.getEndTime());
+            if (patientTerm.getDuration() != null) {
+                String endTime = TimeUtil.timeAdd(resources.getBeginTime(), patientTerm.getDuration());
+                resources.setEndTime(endTime);
+            } else if (patientTerm.getTermDuration() != null) {
+                String endTime = TimeUtil.timeAdd(resources.getBeginTime(), patientTerm.getTermDuration());
+                resources.setEndTime(endTime);
+            } else {
+                resources.setEndTime(workTime.getEndTime());
+            }
         }
-        // 获取患者套餐
-        PatientTerm patientTerm = resources.getPatientTerm();
-        if (null == patientTerm || null == patientTerm.getId()) {
-            throw new RuntimeException("患者套餐不能为空");
+        if (StringUtils.isEmpty(resources.getBeginTime()) || StringUtils.isEmpty(resources.getEndTime())) {
+            throw new BadRequestException("开始时间和结束时间不能为空");
         }
-        patientTerm = patientTermRepository.getPatientTermForUpdate(patientTerm.getId());
-        if (null == patientTerm) {
-            throw new RuntimeException("患者套餐不存在");
-        }
-        if (patientTerm.getTimes() <= 0) {
-            throw new RuntimeException("剩余次数不足");
+        List<WorkTime> workTimeList = workTimeRepository.findByComIdAndTime(resources.getComId(), resources.getBeginTime(), resources.getEndTime());
+        if (null == workTimeList || workTimeList.isEmpty()) {
+            throw new BadRequestException(resources.getBeginTime() + "至" + resources.getEndTime() + "内无可用工作时间段");
         }
 
         // 获取患者信息
@@ -396,8 +526,7 @@ public class ReserveServiceImpl implements ReserveService {
         resources.setPatient(patient);
 
         // 获取套餐
-        String code = patientTerm.getTermCode();
-        Term term = termRepository.findByCode(user.getComId(), code).orElseGet(Term::new);
+        Term term = termRepository.findById(patientTerm.getTermId()).orElseGet(Term::new);
         if (null == term.getId()) {
             throw new RuntimeException("套餐不存在");
         }
@@ -413,28 +542,27 @@ public class ReserveServiceImpl implements ReserveService {
         }
 
         // 判断是否在该时段内已经有预约
-        Long reservedCount = repository.countByPatientTerm(resources.getDept().getId(), patient.getId(), patientTerm.getId(), resources.getDate(), resources.getWorkTime().getId());
+        Long reservedCount = repository.countByPatientTerm(patient.getId(), patientTerm.getId(), resources.getDate(), resources.getWorkTime().getId());
         if (null != reservedCount && reservedCount > 0) {
             throw new RuntimeException("该时段已预约, 请勿重复预约");
         }
 
         // 查询资源在时间段内的使用数量
-        List<Map<String, Object>> categoryUseCountMap = repository.queryReserveResourceCount(resources.getDept().getId(), resources.getDate(),
-                resources.getWorkTime().getId());
+        List<ReserveResourceCategoryCount> categoryUseCountList = repository.queryReserveResourceCount(resources.getComId(), resources.getDate());
         // 查询资源组下的所有分类
         Set<ResourceCategory> resourceCategories = resourceGroup.getResourceCategories();
         if (null != resourceCategories && !resourceCategories.isEmpty()) {
             for (ResourceCategory resourceCategory : resourceCategories) {
-                long useCount = 0;
-                for (Map<String, Object> categoryUseCount : categoryUseCountMap) {
-                    if (Objects.equals(categoryUseCount.get("resource_category_id").toString(), resourceCategory.getId().toString())) {
-                        useCount = Long.parseLong(categoryUseCount.get("count").toString());
-                        break;
+                for (ReserveResourceCategoryCount categoryCount : categoryUseCountList) {
+                    if (!resourceCategory.getId().equals(categoryCount.getResourceCategoryId())) {
+                        continue;
                     }
-                }
-                long count = null == resourceCategory.getCount() ? 0 : resourceCategory.getCount();
-                if (count - useCount <= 0) {
-                    throw new RuntimeException("可用资源不足: " + resourceCategory.getName());
+
+                    long count = null == resourceCategory.getCount() ? 0 : resourceCategory.getCount();
+                    long useCount = null == categoryCount.getCount() ? 0 : categoryCount.getCount();
+                    if (useCount >= count) {
+                        throw new BadRequestException("可用资源不足:" + resourceCategory.getName());
+                    }
                 }
             }
         }
@@ -445,19 +573,25 @@ public class ReserveServiceImpl implements ReserveService {
         patientTermRepository.save(patientTerm);
 
         // 新增
-        resources.setStatus("init");
+        resources.setVerifyStatus(ReserveVerifyStatus.init);
+        resources.setStatus(YesNoEnum.YES);
         Reserve reserve = repository.save(resources);
 
         // 新增预约资源
         if (null != resourceCategories && !resourceCategories.isEmpty()) {
             List<ReserveResource> resourceList = new ArrayList<>();
-            for (ResourceCategory resourceCategory : resourceCategories) {
-                ReserveResource resource = new ReserveResource();
-                resource.setReserve(reserve);
-                resource.setResourceGroup(resourceGroup);
-                resource.setResourceCategory(resourceCategory);
-                resource.setResource(null);
-                resourceList.add(resource);
+            for (WorkTime workTimeItem : workTimeList) {
+                for (ResourceCategory resourceCategory : resourceCategories) {
+                    ReserveResource resource = new ReserveResource();
+                    resource.setReserve(reserve);
+                    resource.setDate(reserve.getDate());
+                    resource.setWorkTime(workTimeItem);
+                    resource.setResourceGroup(resourceGroup);
+                    resource.setResourceCategory(resourceCategory);
+                    resource.setResource(null);
+                    resource.setStatus(YesNoEnum.YES);
+                    resourceList.add(resource);
+                }
             }
             reserveResourceRepository.saveAll(resourceList);
         }
@@ -496,7 +630,7 @@ public class ReserveServiceImpl implements ReserveService {
         return mapper.toDto(reserve);
     }
 
-    @Transactional
+    @Transactional(rollbackFor = Exception.class)
     @Override
     public ReserveDto verify(Reserve resources) throws Exception {
         if (null == resources.getResourceGroup()) {
@@ -508,8 +642,9 @@ public class ReserveServiceImpl implements ReserveService {
         for (ReserveResource resource : resources.getReserveResources()) {
             if (null == resource || null == resource.getId() || null == resource.getResource() || null == resource.getResource().getId()) {
                 String name = null;
-                if (null != resource && null != resource.getResourceCategory()) {
-                    name = resource.getResourceCategory().getName();
+                if (null != resource && null != resource.getResourceCategory() && null != resource.getResourceCategory().getId()) {
+                    ResourceCategoryDto resourceCategory = resourceCategoryService.findById(resource.getResourceCategory().getId());
+                    name = resourceCategory.getName();
                 }
                 throw new RuntimeException("资源不能为空: " + name);
             }
@@ -520,8 +655,8 @@ public class ReserveServiceImpl implements ReserveService {
         if (null == reserve) {
             throw new RuntimeException("预约不存在");
         }
-        if (!"check_in".equalsIgnoreCase(reserve.getStatus())) {
-            throw new RuntimeException("预约状态错误: " + reserve.getStatus());
+        if (ReserveVerifyStatus.check_in != reserve.getVerifyStatus()) {
+            throw new RuntimeException("预约状态错误: " + reserve.getVerifyStatus());
         }
 
         // 获取患者套餐
@@ -560,10 +695,10 @@ public class ReserveServiceImpl implements ReserveService {
         }
 
         // 更新预约状态
-        final String oldStatus = reserve.getStatus();
-        reserve.setStatus("verified");
+        final ReserveVerifyStatus oldStatus = reserve.getVerifyStatus();
+        reserve.setVerifyStatus(ReserveVerifyStatus.verified);
         // 更新操作员
-        reserve.setOperator(resources.getOperator());
+        reserve.setOperators(resources.getOperators());
         repository.save(reserve);
 
         // 发送短信
@@ -591,8 +726,8 @@ public class ReserveServiceImpl implements ReserveService {
         // 新增日志
         ReserveLog reserveLog = new ReserveLog();
         reserveLog.setType("status");
-        reserveLog.setBefore(oldStatus);
-        reserveLog.setAfter(reserve.getStatus());
+        reserveLog.setBefore(oldStatus.toString());
+        reserveLog.setAfter(reserve.getVerifyStatus().toString());
         reserveLog.setReserve(reserve);
         reserveLog.setContent("预约核销");
         reserveLogRepository.save(reserveLog);
@@ -600,12 +735,13 @@ public class ReserveServiceImpl implements ReserveService {
         return mapper.toDto(reserve);
     }
 
-    @Transactional
+    @Transactional(rollbackFor = Exception.class)
     @Override
     public ReserveDto cancel(Reserve resources) throws Exception {
         return cancel(resources, false);
     }
 
+    @Transactional(rollbackFor = Exception.class)
     public ReserveDto cancel(Reserve resources, boolean bySystem) throws Exception {
         if (null == resources || null == resources.getId()) {
             throw new RuntimeException("预约不能为空");
@@ -618,12 +754,12 @@ public class ReserveServiceImpl implements ReserveService {
             throw new RuntimeException("患者套餐不能为空");
         }
         // 预约已取消, 直接返回
-        if ("canceled".equalsIgnoreCase(reserve.getStatus())) {
+        if (ReserveVerifyStatus.canceled == reserve.getVerifyStatus()) {
             return mapper.toDto(reserve);
         }
 
         // 已核销的作废, 检查权限, 更新相关数据
-        if ("verified".equalsIgnoreCase(reserve.getStatus())) {
+        if (ReserveVerifyStatus.verified == reserve.getVerifyStatus()) {
             boolean hasRole = false;
             JwtUserDto currentUser = (JwtUserDto) SecurityUtils.getCurrentUser();
             for (RoleSmallDto role : currentUser.getUser().getRoles()) {
@@ -658,12 +794,13 @@ public class ReserveServiceImpl implements ReserveService {
         patientTermRepository.save(patientTerm);
 
         // 更新状态
-        final String oldStatus = reserve.getStatus();
-        reserve.setStatus("canceled");
+        final ReserveVerifyStatus oldStatus = reserve.getVerifyStatus();
+        reserve.setVerifyStatus(ReserveVerifyStatus.canceled);
         repository.save(reserve);
 
         // 删除资源
-        reserveResourceRepository.deleteByReserveId(reserve.getId());
+        // 2021-03-29: 因为统计已检查过预约的状态, 所以此处删除资源暂时可注释掉
+//        reserveResourceRepository.deleteByReserveId(reserve.getId());
 
         // 发送短信
         if (!StringUtils.isEmpty(patient.getPhone()) && !bySystem) {
@@ -690,8 +827,8 @@ public class ReserveServiceImpl implements ReserveService {
         // 新增日志
         ReserveLog reserveLog = new ReserveLog();
         reserveLog.setType("status");
-        reserveLog.setBefore(oldStatus);
-        reserveLog.setAfter(reserve.getStatus());
+        reserveLog.setBefore(oldStatus.toString());
+        reserveLog.setAfter(reserve.getVerifyStatus().toString());
         reserveLog.setReserve(reserve);
         reserveLog.setContent("预约取消");
         reserveLogRepository.save(reserveLog);
@@ -708,7 +845,7 @@ public class ReserveServiceImpl implements ReserveService {
         return mapper.toDto(reserve);
     }
 
-    @Transactional
+    @Transactional(rollbackFor = Exception.class)
     @Override
     public ReserveDto checkIn(Reserve resources) {
         if (null == resources || null == resources.getId()) {
@@ -718,7 +855,8 @@ public class ReserveServiceImpl implements ReserveService {
         if (null == reserve) {
             throw new RuntimeException("预约不存在");
         }
-        if (!"init".equalsIgnoreCase(reserve.getStatus())) {
+
+        if (ReserveVerifyStatus.init != reserve.getVerifyStatus()) {
             throw new RuntimeException("只有预约状态才能签到");
         }
 
@@ -738,8 +876,8 @@ public class ReserveServiceImpl implements ReserveService {
         }
 
         // 更新状态
-        final String oldStatus = reserve.getStatus();
-        reserve.setStatus("check_in");
+        final ReserveVerifyStatus oldStatus = reserve.getVerifyStatus();
+        reserve.setVerifyStatus(ReserveVerifyStatus.check_in);
         repository.save(reserve);
 
 //        // 发送短信
@@ -759,8 +897,8 @@ public class ReserveServiceImpl implements ReserveService {
         // 新增日志
         ReserveLog reserveLog = new ReserveLog();
         reserveLog.setType("status");
-        reserveLog.setBefore(oldStatus);
-        reserveLog.setAfter(reserve.getStatus());
+        reserveLog.setBefore(oldStatus.toString());
+        reserveLog.setAfter(reserve.getVerifyStatus().toString());
         reserveLog.setReserve(reserve);
         reserveLog.setContent("预约签到");
         reserveLogRepository.save(reserveLog);
@@ -780,9 +918,17 @@ public class ReserveServiceImpl implements ReserveService {
     @Transactional(rollbackFor = Exception.class)
     @Override
     public void deleteAll(Long[] ids) {
-        for (Long id : ids) {
-            repository.deleteById(id);
-            reserveResourceRepository.deleteByReserveId(id);
+        JwtUserDto user = (JwtUserDto) SecurityUtils.getCurrentUser();
+        if (user.isAdmin()) {
+            for (Long id : ids) {
+                repository.deleteById(id);
+                reserveResourceRepository.deleteByReserveId(id);
+            }
+        } else {
+            for (Long id : ids) {
+                repository.updateStatus(id, YesNoEnum.NO);
+                reserveResourceRepository.updateStatusByReserveId(id, YesNoEnum.NO);
+            }
         }
     }
 
@@ -791,7 +937,20 @@ public class ReserveServiceImpl implements ReserveService {
         List<Map<String, Object>> list = new ArrayList<>();
         for (ReserveDto item : all) {
             Map<String, Object> map = new LinkedHashMap<>();
-            map.put("id", item.getId());
+            map.put("ID", item.getId());
+            map.put("组织ID", item.getOrgId());
+            map.put("公司ID", item.getComId());
+            map.put("部门ID", item.getDeptId());
+            map.put("患者", item.getPatient().getName());
+            map.put("套餐", item.getTerm().getName());
+//            map.put("患者套餐", item.getPatientTerm());
+//            map.put("资源分组", item.getResourceGroup());
+            map.put("预约日期", item.getDate());
+            map.put("工作时段", item.getWorkTime().getId());
+            map.put("开始时间", item.getBeginTime());
+            map.put("结束时间", item.getEndTime());
+//            map.put("操作员", item.getOperators());
+            map.put("核销状态", item.getVerifyStatus());
             map.put("状态", item.getStatus());
             map.put("备注", item.getRemark());
             list.add(map);
@@ -800,84 +959,136 @@ public class ReserveServiceImpl implements ReserveService {
     }
 
     @Override
-    public TodayReserveCountDto queryTodayCount(Long deptId) {
-        TodayReserveCountDto res = new TodayReserveCountDto();
-        String date = TimeUtil.getCurrentDate();
-        List<Map<String, Object>> list = repository.queryTodayCount(deptId, date);
-        for (Map<String, Object> item : list) {
-            String status = item.get("status").toString();
-            int count = Integer.parseInt(item.get("count").toString());
-            if ("all".equalsIgnoreCase(status)) {
-                res.setTotalCount(count);
-            } else if ("init".equalsIgnoreCase(status)) {
-                res.setPreprocessCount(count);
-            } else if ("check_in".equalsIgnoreCase(status)) {
-                res.setProcessingCount(count);
-            } else if ("verified".equalsIgnoreCase(status)) {
-                res.setProcessedCount(count);
+    public WeekReserveCountDto queryTodayCount(ReserveCriteria criteria) {
+        String beginDate = TimeUtil.getCurrentDate();
+        String endDate = TimeUtil.getDate(beginDate, 1);
+
+        return queryDateCount(criteria, beginDate, endDate);
+    }
+
+    @Override
+    public List<WeekReserveCountDto> queryWeekCount(ReserveCriteria criteria) {
+        List<WeekReserveCountDto> res = new ArrayList<>();
+        for (int i = 0; i < 2; i++) {
+            List<String> dateList = TimeUtil.getWeekDateRange(-i);
+            String endDate = dateList.get(dateList.size() - 1);
+            String beginDate = dateList.get(0);
+            WeekReserveCountDto countDto = queryDateCount(criteria, beginDate, endDate);
+            res.add(countDto);
+        }
+        return res;
+    }
+
+    private WeekReserveCountDto queryDateCount(ReserveCriteria criteria, String beginDate, String endDate) {
+        Long orgId = null;
+        Long comId = null;
+
+        JwtUserDto user = (JwtUserDto) SecurityUtils.getCurrentUser();
+        orgId = user.getOrgId();
+        // 管理员可以查看不同的公司统计
+        if (user.isAdmin()) {
+            comId = criteria.getComId();
+        }
+        if (null == comId) {
+            comId = user.getComId();
+        }
+        if (null == orgId && null == comId) {
+            throw new BadRequestException("组织 ID 或者 公司 ID 不能为空");
+        }
+
+        WeekReserveCountDto res = new WeekReserveCountDto();
+        res.setDates(TimeUtil.getDateRange(beginDate, endDate));
+        if (res.getDates() == null || res.getDates().isEmpty()) {
+            throw new BadRequestException("日期范围错误: " + beginDate + "至" + endDate);
+        }
+
+        res.setAll(new ArrayList<>(res.getDates().size()));
+        res.setInit(new ArrayList<>(res.getDates().size()));
+        res.setCheckIn(new ArrayList<>(res.getDates().size()));
+        res.setVerified(new ArrayList<>(res.getDates().size()));
+
+        if (null != comId) {
+            // 已预约状态统计
+            List<Long> initList = queryDateCountByComId(comId, ReserveVerifyStatus.init, beginDate, endDate, res.getDates());
+            res.setInit(initList);
+
+            // 已签到状态统计
+            List<Long> checkInList = queryDateCountByComId(comId, ReserveVerifyStatus.check_in, beginDate, endDate, res.getDates());
+            res.setCheckIn(checkInList);
+
+            // 已核销状态统计
+            List<Long> verifiedList = queryDateCountByComId(comId, ReserveVerifyStatus.verified, beginDate, endDate, res.getDates());
+            res.setVerified(verifiedList);
+
+            // 总计
+            res.setAll(processDateCountTotal(initList, checkInList, verifiedList));
+        } else {
+            // 已预约状态统计
+            List<Long> initList = queryDateCountByOrgId(orgId, ReserveVerifyStatus.init, beginDate, endDate, res.getDates());
+            res.setInit(initList);
+
+            // 已签到状态统计
+            List<Long> checkInList = queryDateCountByOrgId(orgId, ReserveVerifyStatus.check_in, beginDate, endDate, res.getDates());
+            res.setCheckIn(checkInList);
+
+            // 已核销状态统计
+            List<Long> verifiedList = queryDateCountByOrgId(orgId, ReserveVerifyStatus.verified, beginDate, endDate, res.getDates());
+            res.setVerified(verifiedList);
+
+            // 总计
+            res.setAll(processDateCountTotal(initList, checkInList, verifiedList));
+        }
+
+        return res;
+    }
+
+    private List<Long> queryDateCountByComId(Long comId, ReserveVerifyStatus verifyStatus, String beginDate, String endDate, List<String> dateList) {
+        List<ReserveDateCount> list = repository.queryDateCountByComId(comId, verifyStatus, beginDate, endDate);
+        return processDateCountToList(list, dateList);
+    }
+
+    private List<Long> queryDateCountByOrgId(Long orgId, ReserveVerifyStatus verifyStatus, String beginDate, String endDate, List<String> dateList) {
+        List<ReserveDateCount> list = repository.queryDateCountByOrgId(orgId, verifyStatus, beginDate, endDate);
+        return processDateCountToList(list, dateList);
+    }
+
+    private List<Long> processDateCountToList(List<ReserveDateCount> list, List<String> dateList) {
+        List<Long> res = new ArrayList<>(dateList.size());
+
+        // 统计
+        for (String date : dateList) {
+            ReserveDateCount dateCount = null;
+            for (ReserveDateCount listItem : list) {
+                if (StringUtils.equals(date, listItem.getDate())) {
+                    dateCount = listItem;
+                    break;
+                }
             }
+            if (null == dateCount) {
+                res.add(0L);
+            } else {
+                res.add(dateCount.getCount());
+            }
+        }
+
+        return res;
+    }
+
+    private List<Long> processDateCountTotal(List<Long> initList, List<Long> checkInList, List<Long> verifiedList) {
+        List<Long> res = new ArrayList<>();
+        for (int i = 0; i < initList.size() && i < checkInList.size() && i < verifiedList.size(); i++) {
+            res.add(initList.get(i) + checkInList.get(i) + verifiedList.get(i));
         }
         return res;
     }
 
     @Override
-    public List<WeekReserveCountDto> queryWeekCount(Long deptId) {
-        List<WeekReserveCountDto> resList = new ArrayList<>();
-
-        for (int i = 0; i < 2; i++) {
-            List<String> dateList = TimeUtil.getWeekDateRange(-i);
-            String endDate = dateList.get(dateList.size() - 1);
-            String beginDate = dateList.get(0);
-
-            WeekReserveCountDto weekReserveCount = new WeekReserveCountDto();
-            // all
-            List<Map<String, Object>> list = repository.queryRangeCountByStatusNotEquals(deptId, beginDate, endDate, "canceled");
-            List<Long> allList = processDateListCount(dateList, list);
-            weekReserveCount.setAll(allList);
-
-            // init
-            list = repository.queryRangeCountByStatusEquals(deptId, beginDate, endDate, "init");
-            List<Long> initList = processDateListCount(dateList, list);
-            weekReserveCount.setInit(initList);
-
-            // check in
-            list = repository.queryRangeCountByStatusEquals(deptId, beginDate, endDate, "check_in");
-            List<Long> checkInList = processDateListCount(dateList, list);
-            weekReserveCount.setCheckIn(checkInList);
-
-            // verified
-            list = repository.queryRangeCountByStatusEquals(deptId, beginDate, endDate, "verified");
-            List<Long> verifiedList = processDateListCount(dateList, list);
-            weekReserveCount.setVerified(verifiedList);
-
-            resList.add(weekReserveCount);
-        }
-
-        return resList;
-    }
-
-    private List<Long> processDateListCount(List<String> dateList, List<Map<String, Object>> list) {
-        List<Long> resList = new ArrayList<>();
-        for (String date : dateList) {
-            long count = 0L;
-            for (Map<String, Object> item : list) {
-                if (date.equals(item.get("date").toString())) {
-                    count = Long.parseLong(item.get("count").toString());
-                    break;
-                }
-            }
-            resList.add(count);
-        }
-        return resList;
-    }
-
-    @Override
-    public TodayWorkTimeReserveCountDto queryTodayCountGroupByWorkTime(Long deptId) {
+    public TodayWorkTimeReserveCountDto queryTodayCountGroupByWorkTime(Long comId) {
         TodayWorkTimeReserveCountDto todayWorkTimeReserveCount = new TodayWorkTimeReserveCountDto();
         List<String> workTimes = new ArrayList<>();
 
         // 查询所有时段
-        List<WorkTime> workTimeList = workTimeRepository.findAllByDeptIdOrderByBeginTime(deptId);
+        List<WorkTime> workTimeList = workTimeRepository.findByComId(comId);
 
         // 处理时间数据
         for (WorkTime workTime : workTimeList) {
@@ -887,70 +1098,67 @@ public class ReserveServiceImpl implements ReserveService {
 
         // 查询今日预约数量统计
         String todayDate = TimeUtil.getCurrentDate();
-        List<Map<String, Object>> todayList = repository.queryCountGroupByWorkTimeId(deptId, todayDate);
-
-        todayWorkTimeReserveCount.setCounts(processCountList(todayList, workTimeList));
+        List<ReserveWorkTimeCount> todayList = repository.queryCountGroupByWorkTimeId(comId, todayDate);
+        List<List<Long>> todayCount = processCountList(todayList, workTimeList);
+        todayWorkTimeReserveCount.setCounts(todayCount.get(0));
+        todayWorkTimeReserveCount.setInitCounts(todayCount.get(1));
+        todayWorkTimeReserveCount.setCheckInCounts(todayCount.get(2));
+        todayWorkTimeReserveCount.setVerifiedCounts(todayCount.get(3));
 
         // 查询昨日预约数量统计
         String prevDate = TimeUtil.getCurrentDate(-1);
-        List<Map<String, Object>> prevList = repository.queryCountGroupByWorkTimeId(deptId, prevDate);
-
-        todayWorkTimeReserveCount.setPrevCounts(processCountList(prevList, workTimeList));
+        List<ReserveWorkTimeCount> prevList = repository.queryCountGroupByWorkTimeId(comId, prevDate);
+        List<List<Long>> prevCount = processCountList(prevList, workTimeList);
+        todayWorkTimeReserveCount.setPrevCounts(prevCount.get(0));
+        todayWorkTimeReserveCount.setPrevInitCounts(prevCount.get(1));
+        todayWorkTimeReserveCount.setPrevCheckInCounts(prevCount.get(2));
+        todayWorkTimeReserveCount.setPrevVerifiedCounts(prevCount.get(3));
 
         return todayWorkTimeReserveCount;
     }
 
-    private List<Long> processCountList(List<Map<String, Object>> list, List<WorkTime> workTimeList) {
-        List<Long> counts = new ArrayList<>();
+    private List<List<Long>> processCountList(List<ReserveWorkTimeCount> list, List<WorkTime> workTimeList) {
+        List<List<Long>> res = new ArrayList<>();
+        List<Long> countList = new ArrayList<>();
+        List<Long> initList = new ArrayList<>();
+        List<Long> checkInList = new ArrayList<>();
+        List<Long> verifiedList = new ArrayList<>();
         // 处理数据
         for (WorkTime workTime : workTimeList) {
-            long count = 0;
-            for (Map<String, Object> item : list) {
-                if (workTime.getId().toString().equals(item.get("work_time_id").toString())) {
-                    count = Long.parseLong(item.get("count").toString());
+            long init = 0;
+            for (ReserveWorkTimeCount item : list) {
+                if (workTime.getId().equals(item.getWorkTimeId()) && item.getVerifyStatus() == ReserveVerifyStatus.init) {
+                    init = item.getCount();
                     break;
                 }
             }
-            counts.add(count);
-        }
-        return counts;
-    }
+            initList.add(init);
 
-    @Override
-    public List<List<Long>> queryTodayCountGroupByWorkTimeAndResourceGroup(Long deptId) {
-        List<List<Long>> resList = new ArrayList<>();
-
-        // 根据工作时段和资源组进行统计
-        String date = TimeUtil.getCurrentDate();
-        List<Map<String, Object>> list = repository.queryCountGroupByWorkTimeAndResourceGroup(deptId, date);
-
-        // 查询所有时段
-        List<WorkTime> workTimeList = workTimeRepository.findAllByDeptIdOrderByBeginTime(deptId);
-
-        // 查询所有资源
-        List<ResourceGroup> resourceGroupList = resourceGroupRepository.findAllByDeptId(deptId);
-
-        // 循环工作时间段列表
-        for (WorkTime workTime : workTimeList) {
-            String workTimeId = workTime.getId().toString();
-            List<Long> workTimeCountList = new ArrayList<>();
-            // 循环资源组列表
-            for (ResourceGroup resourceGroup : resourceGroupList) {
-                String resourceGroupId = resourceGroup.getId().toString();
-                long count = 0;
-                // 循环数据
-                for (Map<String, Object> item : list) {
-                    if (item.get("work_time_id").toString().equals(workTimeId) && item.get("resource_group_id").toString().equals(resourceGroupId)) {
-                        count = Long.parseLong(item.get("count").toString());
-                        break;
-                    }
+            long checkIn = 0;
+            for (ReserveWorkTimeCount item : list) {
+                if (workTime.getId().equals(item.getWorkTimeId()) && item.getVerifyStatus() == ReserveVerifyStatus.check_in) {
+                    checkIn = item.getCount();
+                    break;
                 }
-                workTimeCountList.add(count);
             }
-            resList.add(workTimeCountList);
-        }
+            checkInList.add(checkIn);
 
-        return resList;
+            long verified = 0;
+            for (ReserveWorkTimeCount item : list) {
+                if (workTime.getId().equals(item.getWorkTimeId()) && item.getVerifyStatus() == ReserveVerifyStatus.verified) {
+                    verified = item.getCount();
+                    break;
+                }
+            }
+            verifiedList.add(verified);
+
+            countList.add(init + checkIn + verified);
+        }
+        res.add(countList);
+        res.add(initList);
+        res.add(checkInList);
+        res.add(verifiedList);
+        return res;
     }
 
 }

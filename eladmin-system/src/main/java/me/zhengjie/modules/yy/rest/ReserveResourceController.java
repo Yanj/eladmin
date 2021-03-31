@@ -42,7 +42,7 @@ public class ReserveResourceController {
     @ApiOperation("查询预约资源统计")
     @GetMapping("/reserveCount")
     @AnonymousAccess
-    public ResponseEntity<Object> reserveCount(ReserveCountCriteria criteria) {
+    public ResponseEntity<Object> reserveCount(ReserveCountCriteria criteria) throws Exception {
         return new ResponseEntity<>(reserveResourceService.queryReserveCount(criteria), HttpStatus.OK);
     }
 
