@@ -41,19 +41,6 @@ public class PatientTermServiceImpl implements PatientTermService {
     private final DeptService deptService;
 
     @Override
-    public List<PatientTermTimesCount> queryPatientTermTimesCount(PatientTermTimesCountCriteria criteria) {
-        Long comId = criteria.getComId();
-        JwtUserDto user = (JwtUserDto) SecurityUtils.getCurrentUser();
-        if (!user.isAdmin()) {
-            comId = user.getComId();
-        }
-        if (comId == null) {
-            throw new BadRequestException("comId不能为空");
-        }
-        return repository.queryPatientTermTimesCount(comId);
-    }
-
-    @Override
     public Map<String, Object> queryAll(PatientTermCriteria criteria, Pageable pageable) {
         JwtUserDto user = (JwtUserDto) SecurityUtils.getCurrentUser();
         criteria.setUser(user);

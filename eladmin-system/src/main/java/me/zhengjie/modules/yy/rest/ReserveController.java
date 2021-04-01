@@ -64,22 +64,6 @@ public class ReserveController {
         return new ResponseEntity<>(reserveService.queryTodayCountGroupByWorkTime(deptId), HttpStatus.OK);
     }
 
-    @Log("查询工作时段预约统计")
-    @ApiOperation("查询工作时段预约统计")
-    @GetMapping("/workTimeReserveList")
-    @AnonymousAccess
-    public ResponseEntity<Object> queryWorkTimeReserveList(WorkTimeReserveListCriteria criteria) {
-        return new ResponseEntity<>(reserveService.queryWorkTimeReserveList(criteria), HttpStatus.OK);
-    }
-
-    @Log("查询工作量统计")
-    @ApiOperation("查询工作量统计")
-    @GetMapping("/userWorkCount")
-    @AnonymousAccess
-    public ResponseEntity<Object> queryUserWorkCount(UserReserveCountCriteria criteria) {
-        return new ResponseEntity<>(reserveService.queryUserReserveCount(criteria), HttpStatus.OK);
-    }
-
     @Log("查询预约")
     @ApiOperation("查询预约")
     @GetMapping

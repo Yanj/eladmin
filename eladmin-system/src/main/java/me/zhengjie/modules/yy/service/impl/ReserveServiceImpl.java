@@ -146,77 +146,6 @@ public class ReserveServiceImpl implements ReserveService {
     }
 
     @Override
-    public List<UserReserveCount> queryUserReserveCount(UserReserveCountCriteria criteria) {
-        Long comId = criteria.getComId();
-        String beginDate = criteria.getBeginDate();
-        String endDate = criteria.getEndDate();
-
-        JwtUserDto user = (JwtUserDto) SecurityUtils.getCurrentUser();
-        if (!user.isAdmin()) {
-            comId = user.getComId();
-        }
-        if (null == comId) {
-            throw new BadRequestException("comId 不能为空");
-        }
-        if (StringUtils.isEmpty(beginDate)) {
-            beginDate = TimeUtil.getCurrentDate();
-        }
-        if (StringUtils.isEmpty(endDate)) {
-            endDate = TimeUtil.getCurrentDate();
-        }
-        return repository.queryUserReserveCount(comId, beginDate, endDate);
-    }
-
-    @Override
-    public List<ResourceGroupWorkTimeReserveListDto> queryWorkTimeReserveList(WorkTimeReserveListCriteria criteria) {
-        Long comId = criteria.getComId();
-//        JwtUserDto user = (JwtUserDto) SecurityUtils.getCurrentUser();
-//        if (!user.isAdmin()) {
-//            comId = user.getComId();
-//        }
-        if (null == comId) {
-            throw new BadRequestException("comId不能为空");
-        }
-
-        List<WorkTime> workTimeList = workTimeRepository.findByComId(comId);
-        List<ResourceGroup> resourceGroupList = resourceGroupRepository.findByComId(comId);
-
-        ReserveCriteria reserveCriteria = new ReserveCriteria();
-        reserveCriteria.setComId(comId);
-        reserveCriteria.setStatus(YesNoEnum.YES);
-        reserveCriteria.setDate(criteria.getDate());
-        reserveCriteria.setVerifyStatus(criteria.getVerifyStatus());
-        List<Reserve> reserveList = repository.findAll((root, criteriaQuery, criteriaBuilder) -> QueryHelp.getPredicate(root, reserveCriteria, criteriaBuilder));
-
-        List<ResourceGroupWorkTimeReserveListDto> res = new ArrayList<>();
-        for (ResourceGroup resourceGroup : resourceGroupList) {
-            ResourceGroupWorkTimeReserveListDto resourceGroupWorkTimeReserveList = new ResourceGroupWorkTimeReserveListDto();
-            resourceGroupWorkTimeReserveList.setResourceGroup(resourceGroupSmallMapper.toDto(resourceGroup));
-            List<WorkTimeReserveListDto> list = new ArrayList<>();
-            for (WorkTime workTime : workTimeList) {
-                WorkTimeReserveListDto workTimeReserveList = new WorkTimeReserveListDto();
-                workTimeReserveList.setWorkTime(workTimeSmallMapper.toDto(workTime));
-                List<ReserveDto> reserves = new ArrayList<>();
-                for (Reserve reserve : reserveList) {
-                    if (null == reserve.getResourceGroup() || !resourceGroup.getId().equals(reserve.getResourceGroup().getId())) {
-                        continue;
-                    }
-                    if (null == reserve.getWorkTime() || !workTime.getId().equals(reserve.getWorkTime().getId())) {
-                        continue;
-                    }
-                    reserves.add(mapper.toDto(reserve));
-                }
-                workTimeReserveList.setReserves(reserves);
-                list.add(workTimeReserveList);
-            }
-            resourceGroupWorkTimeReserveList.setList(list);
-            res.add(resourceGroupWorkTimeReserveList);
-        }
-
-        return res;
-    }
-
-    @Override
     public Map<String, Object> queryAll(ReserveCriteria criteria, Pageable pageable) {
         JwtUserDto user = (JwtUserDto) SecurityUtils.getCurrentUser();
         criteria.setUser(user);
@@ -625,15 +554,20 @@ public class ReserveServiceImpl implements ReserveService {
         Set<ResourceCategory> resourceCategories = resourceGroup.getResourceCategories();
         if (null != resourceCategories && !resourceCategories.isEmpty()) {
             for (ResourceCategory resourceCategory : resourceCategories) {
-                for (ReserveResourceCategoryCount categoryCount : categoryUseCountList) {
-                    if (!resourceCategory.getId().equals(categoryCount.getResourceCategoryId())) {
-                        continue;
-                    }
+                for (WorkTime workTimeItem : workTimeList) {
+                    for (ReserveResourceCategoryCount categoryCount : categoryUseCountList) {
+                        if (!workTimeItem.getId().equals(categoryCount.getWorkTimeId())) {
+                            continue;
+                        }
+                        if (!resourceCategory.getId().equals(categoryCount.getResourceCategoryId())) {
+                            continue;
+                        }
 
-                    long count = null == resourceCategory.getCount() ? 0 : resourceCategory.getCount();
-                    long useCount = null == categoryCount.getCount() ? 0 : categoryCount.getCount();
-                    if (useCount >= count) {
-                        throw new BadRequestException("可用资源不足:" + resourceCategory.getName());
+                        long count = null == resourceCategory.getCount() ? 0 : resourceCategory.getCount();
+                        long useCount = null == categoryCount.getCount() ? 0 : categoryCount.getCount();
+                        if (useCount >= count) {
+                            throw new BadRequestException("可用资源不足:" + resourceCategory.getName() + "(" + workTimeItem.getBeginTime() + ")");
+                        }
                     }
                 }
             }

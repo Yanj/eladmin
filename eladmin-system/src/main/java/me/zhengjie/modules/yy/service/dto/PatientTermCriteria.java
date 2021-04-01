@@ -23,6 +23,9 @@ public class PatientTermCriteria extends BaseCriteria implements Serializable {
     private String blurry;
 
     @Query
+    private String type;
+
+    @Query
     private String termCode;
 
     @Query(joinName = "patient", propName = "id")

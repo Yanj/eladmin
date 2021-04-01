@@ -21,6 +21,7 @@ import com.alibaba.fastjson.parser.deserializer.ObjectDeserializer;
 import com.alibaba.fastjson.serializer.SerializerFeature;
 import com.alibaba.fastjson.support.config.FastJsonConfig;
 import com.alibaba.fastjson.support.spring.FastJsonHttpMessageConverter;
+import me.zhengjie.modules.yy.domain.PatientSourceEnum;
 import me.zhengjie.utils.enums.YesNoEnum;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -107,6 +108,17 @@ public class ConfigurerAdapter implements WebMvcConfigurer {
                 }
                 if ("1".equals(s)) {
                     return YesNoEnum.YES;
+                }
+                return null;
+            }
+        });
+        registry.addConverter(new Converter<String, PatientSourceEnum>() {
+            @Override
+            public PatientSourceEnum convert(String s) {
+                if ("meituan".equalsIgnoreCase(s)) {
+                    return PatientSourceEnum.MEITUAN;
+                } else if ("his".equalsIgnoreCase(s)) {
+                    return PatientSourceEnum.HIS;
                 }
                 return null;
             }

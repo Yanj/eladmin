@@ -38,14 +38,6 @@ public class PatientTermController {
         patientTermService.download(patientTermService.queryAll(criteria), response);
     }
 
-    @Log("查询患者套餐使用情况")
-    @ApiOperation("查询患者套餐使用情况")
-    @GetMapping("/patientTermTimesCount")
-    @AnonymousAccess
-    public ResponseEntity<Object> queryPatientTermTimesCount(PatientTermTimesCountCriteria criteria) {
-        return new ResponseEntity<>(patientTermService.queryPatientTermTimesCount(criteria), HttpStatus.OK);
-    }
-
     @Log("查询单个患者套餐")
     @ApiOperation("查询单个患者套餐")
     @GetMapping("/{id}")

@@ -19,14 +19,6 @@ import java.util.Map;
 public interface PatientTermService {
 
     /**
-     * 查询患者套餐使用情况
-     *
-     * @param criteria .
-     * @return .
-     */
-    List<PatientTermTimesCount> queryPatientTermTimesCount(PatientTermTimesCountCriteria criteria);
-
-    /**
      * 查询数据分页
      *
      * @param criteria 条件

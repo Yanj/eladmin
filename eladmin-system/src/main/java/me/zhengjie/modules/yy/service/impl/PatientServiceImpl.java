@@ -228,12 +228,9 @@ public class PatientServiceImpl implements PatientService {
             if (StringUtils.isEmpty(resources.getCode())) {
                 throw new BadRequestException("患者外部ID不能为空");
             }
-            if (StringUtils.isEmpty(resources.getMrn())) {
-                throw new BadRequestException("患者档案编号不能为空");
-            }
 
             // 查询患者是否已存在
-            Patient patient = findByCodeAndMrn(resources, resources.getCode(), resources.getMrn());
+            Patient patient = findByCode(resources, resources.getCode());
             if (null != patient) {
                 return mapper.toDto(patient);
             }
@@ -270,14 +267,13 @@ public class PatientServiceImpl implements PatientService {
         repository.save(instance);
     }
 
-    private Patient findByCodeAndMrn(Patient instance, String code, String mrn) {
+    private Patient findByCode(Patient instance, String code) {
         PatientCriteria criteria = new PatientCriteria();
         criteria.setOrgId(instance.getOrgId());
         criteria.setComId(instance.getComId());
         criteria.setDeptId(instance.getDeptId());
         criteria.setSource(PatientSourceEnum.HIS);
         criteria.setCode(code);
-        criteria.setMrn(mrn);
         List<Patient> list = repository.findAll((root, criteriaQuery, criteriaBuilder) -> QueryHelp.getPredicate(root, criteria, criteriaBuilder));
         if (!list.isEmpty()) {
             return list.get(0);
@@ -300,6 +296,9 @@ public class PatientServiceImpl implements PatientService {
     }
 
     private void checkMrn(Patient instance, String mrn) {
+        if (StringUtils.isEmpty(mrn)) {
+            return;
+        }
         PatientCriteria criteria = new PatientCriteria();
         criteria.setOrgId(instance.getOrgId());
         criteria.setComId(instance.getComId());

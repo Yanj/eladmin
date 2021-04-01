@@ -17,7 +17,8 @@ alter table yy_patient modify mrn varchar(20) DEFAULT NULL COMMENT '档案号';
 -- 增加 patient_source 字典
 insert into sys_dict (name, description, create_by, update_by, create_time, update_time) values('patient_source', '患者来源', 'admin', 'admin', now(), now());
 insert into sys_dict_detail (dict_id, label, value, dict_sort, create_by, update_by, create_time, update_time) select dict_id, 'HIS', 'HIS', 1, 'admin', 'admin', now(), now() from sys_dict where name = 'patient_source';
-insert into sys_dict_detail (dict_id, label, value, dict_sort, create_by, update_by, create_time, update_time) select dict_id, '美团', 'meituan', 1, 'admin', 'admin', now(), now() from sys_dict where name = 'patient_source';
+insert into sys_dict_detail (dict_id, label, value, dict_sort, create_by, update_by, create_time, update_time) select dict_id, '美团', 'MEITUAN', 1,
+                                                                                                                      'admin', 'admin', now(), now() from sys_dict where name = 'patient_source';
 
 -- 增加 patient_status 字典
 insert into sys_dict (create_by, create_time, update_by, update_time, description, name) values ('admin', now(), 'admin', now(), '患者状态', 'patient_status');
@@ -127,6 +128,15 @@ update yy_patient_term a inner join yy_patient_term b on a.id = b.id set a.total
 update yy_patient_term set term_duration = 30, duration = 30;
 update yy_patient_term set term_operator_count = 1, operator_count = 1;
 
+update yy_patient_term t1
+inner join(
+  select pt.id, pt.total_times, pt.times, count(1) count
+  from yy_patient_term pt
+  inner join yy_reserve r on pt.id = r.patient_term_id and r.verify_status <> 'canceled'
+  group by pt.id
+) t2 on t1.id = t2.id
+set t1.total_times = t2.total_times + t2.count;
+
 insert into sys_dict (name, description, create_by, update_by, create_time, update_time) values('patient_term_status', '患者套餐状态', 'admin', 'admin', now(), now());
 insert into sys_dict_detail (dict_id, label, value, dict_sort, create_by, update_by, create_time, update_time) select dict_id, '有效', '1', 1, 'admin', 'admin', now(), now() from sys_dict where name = 'patient_term_status';
 insert into sys_dict_detail (dict_id, label, value, dict_sort, create_by, update_by, create_time, update_time) select dict_id, '无效', '0', 2, 'admin', 'admin', now(), now() from sys_dict where name = 'patient_term_status';
@@ -174,8 +184,8 @@ insert into yy_reserve_operator select id, operator_id from yy_reserve where ope
 
 
 -- 操作字典表
-delete from sys_dict where name = 'reserve_status';
 delete from sys_dict_detail where dict_id in (select dict_id from sys_dict where name = 'reserve_status');
+delete from sys_dict where name = 'reserve_status';
 
 insert into sys_dict (name, description, create_by, update_by, create_time, update_time) values('reserve_status', '预约状态', 'admin', 'admin', now(), now());
 insert into sys_dict_detail (dict_id, label, value, dict_sort, create_by, update_by, create_time, update_time) select dict_id, '有效', '1', 1, 'admin', 'admin', now(), now() from sys_dict where name = 'reserve_status';
@@ -186,4 +196,37 @@ insert into sys_dict_detail (dict_id, label, value, dict_sort, create_by, update
 insert into sys_dict_detail (dict_id, label, value, dict_sort, create_by, update_by, create_time, update_time) select dict_id, '已签到', 'check_in', 2, 'admin', 'admin', now(), now() from sys_dict where name = 'reserve_verify_status';
 insert into sys_dict_detail (dict_id, label, value, dict_sort, create_by, update_by, create_time, update_time) select dict_id, '已核销', 'verified', 3, 'admin', 'admin', now(), now() from sys_dict where name = 'reserve_verify_status';
 insert into sys_dict_detail (dict_id, label, value, dict_sort, create_by, update_by, create_time, update_time) select dict_id, '已取消', 'canceled', 4, 'admin', 'admin', now(), now() from sys_dict where name = 'reserve_verify_status';
+
+
+
+update sys_menu set name = 'Hospital', component = 'patientReserve/hospital/index' where menu_id = 192;
+
+update sys_menu set name = 'Resource', component = 'patientReserve/resource/index' where menu_id = 200;
+
+update sys_menu set name = 'Term', component = 'patientReserve/term/index' where menu_id = 204;
+
+update sys_menu set name = 'Patient', component = 'patientReserve/patient/index' where menu_id = 212;
+
+update sys_menu set name = 'PatientTerm', component = 'patientReserve/patientTerm/index' where menu_id = 224;
+
+update sys_menu set name = 'Reserve', component = 'patientReserve/reserve/index' where menu_id = 232;
+
+update sys_menu set name = 'WorkTime', component = 'patientReserve/workTime/index' where menu_id = 249;
+
+update sys_menu set name = 'ResourceCategory', component = 'patientReserve/resourceCategory/index' where menu_id = 253;
+
+update sys_menu set name = 'ResourceGroup', component = 'patientReserve/resourceGroup/index' where menu_id = 257;
+
+update sys_menu set name = 'WorkTimeReserveList', component = 'statistics/workTimeReserveList/index', path = 'workTimeReserveList', permission = 'reserve:list' where menu_id = 261;
+
+update sys_menu set name = 'ReservePanel', component = 'patientReserve/reservePanel/index', path = 'reservePanel', permission = 'reserve:list' where menu_id = 262;
+
+insert into sys_menu (menu_id, pid, sub_count,type,title,name,component,menu_sort,icon,path,i_frame,cache,hidden,permission,create_by, update_by,create_time, update_time)
+values(274, 191,0,1,'员工工作量','UserWorkCount','statistics/userWorkCount/index',210,null,'userWorkCount',0,1,0,'patientTerm:list','admin','admin',now(),now());
+
+insert into sys_menu (menu_id, pid, sub_count,type,title,name,component,menu_sort,icon,path,i_frame,cache,hidden,permission,create_by, update_by,create_time, update_time)
+values(275, 191,0,1,'患者套餐用量','PatientTermTimesCount','statistics/patientTermTimesCount/index',220,null,'patientTermTimesCount',0,1,0,'patientTerm:list','admin','admin',now(),now());
+
+insert into sys_roles_menus(role_id, menu_id) values(1, 274),(2,274),(3, 274), (4, 274), (5, 274), (6, 274);
+insert into sys_roles_menus(role_id, menu_id) values(1, 275),(2,275),(3, 275), (4, 275), (5, 275), (6, 275);
 
