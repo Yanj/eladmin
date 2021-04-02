@@ -4,6 +4,9 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import me.zhengjie.exception.BadRequestException;
 import me.zhengjie.modules.security.service.dto.JwtUserDto;
+import me.zhengjie.modules.system.service.DictDetailService;
+import me.zhengjie.modules.system.service.DictService;
+import me.zhengjie.modules.system.service.dto.DictDetailDto;
 import me.zhengjie.modules.yy.domain.Reserve;
 import me.zhengjie.modules.yy.domain.ResourceGroup;
 import me.zhengjie.modules.yy.domain.WorkTime;
@@ -15,13 +18,15 @@ import me.zhengjie.modules.yy.service.dto.*;
 import me.zhengjie.modules.yy.service.mapstruct.ReserveMapper;
 import me.zhengjie.modules.yy.service.mapstruct.ResourceGroupSmallMapper;
 import me.zhengjie.modules.yy.service.mapstruct.WorkTimeSmallMapper;
+import me.zhengjie.utils.FileUtil;
 import me.zhengjie.utils.QueryHelp;
 import me.zhengjie.utils.SecurityUtils;
 import me.zhengjie.utils.enums.YesNoEnum;
 import org.springframework.stereotype.Service;
 
-import java.util.ArrayList;
-import java.util.List;
+import javax.servlet.http.HttpServletResponse;
+import java.io.IOException;
+import java.util.*;
 
 /**
  * @author yanjun
@@ -40,6 +45,40 @@ public class WorkTimeReserveListServiceImpl implements WorkTimeReserveListServic
 
     private final ResourceGroupRepository resourceGroupRepository;
     private final ResourceGroupSmallMapper resourceGroupSmallMapper;
+
+    private final DictService dictService;
+    private final DictDetailService dictDetailService;
+
+    @Override
+    public void download(List<WorkTimeSmallDto> workTimeList, List<ResourceGroupWorkTimeReserveListDto> all, boolean showStatus, HttpServletResponse response) throws IOException {
+        List<DictDetailDto> dictDetailList = dictDetailService.getDictByName("reserve_verify_status");
+        Map<String, String> dictLabel = new HashMap<>();
+        for (DictDetailDto dictDetail : dictDetailList) {
+            dictLabel.put(dictDetail.getValue(), dictDetail.getLabel());
+        }
+        List<Map<String, Object>> list = new ArrayList<>();
+        for (ResourceGroupWorkTimeReserveListDto item : all) {
+            Map<String, Object> map = new LinkedHashMap<>();
+            map.put("资源组", item.getResourceGroup().getName());
+            WorkTimeSmallDto workTime;
+            for (int i = 0; i < workTimeList.size(); i++) {
+                workTime = workTimeList.get(i);
+                StringBuilder str = new StringBuilder();
+                for (ReserveDto reserve : item.getList().get(i).getReserves()) {
+                    str.append(reserve.getPatient().getName());
+                    if (showStatus) {
+                        str.append("(")
+                                .append(dictLabel.get(reserve.getVerifyStatus()))
+                                .append(")");
+                    }
+                    str.append("\r\n");
+                }
+                map.put(workTime.getBeginTime(), str);
+            }
+            list.add(map);
+        }
+        FileUtil.downloadExcel(list, response);
+    }
 
     @Override
     public List<WorkTimeSmallDto> queryWorkTimeList(WorkTimeReserveListCriteria criteria) {
