@@ -43,7 +43,10 @@ public class PatientTermServiceImpl implements PatientTermService {
     @Override
     public Map<String, Object> queryAll(PatientTermCriteria criteria, Pageable pageable) {
         JwtUserDto user = (JwtUserDto) SecurityUtils.getCurrentUser();
-        criteria.setUser(user);
+        // 如果是根据患者来查询则不判断部门
+        if (criteria.getPatientId() == null) {
+            criteria.setUser(user);
+        }
         // 非管理员, 只能看到"未删除"的数据
         if (!user.isAdmin()) {
             criteria.setStatus(YesNoEnum.YES);

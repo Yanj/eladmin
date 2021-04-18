@@ -236,7 +236,7 @@ public class ReserveResourceServiceImpl implements ReserveResourceService {
             dateList.add(date.format(formatter));
             date = date.plus(1, ChronoUnit.DAYS);
             i++;
-        } while(date.compareTo(end) < 0 && i < 14);
+        } while(date.compareTo(end) <= 0 && i < 14);
         return dateList;
     }
 
