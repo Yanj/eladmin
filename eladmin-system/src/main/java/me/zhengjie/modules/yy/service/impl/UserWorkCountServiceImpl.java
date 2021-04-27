@@ -5,11 +5,17 @@ import lombok.extern.slf4j.Slf4j;
 import me.zhengjie.exception.BadRequestException;
 import me.zhengjie.modules.security.service.dto.JwtUserDto;
 import me.zhengjie.modules.yy.domain.UserReserveCount;
+import me.zhengjie.modules.yy.domain.UserReserveCountGroup;
 import me.zhengjie.modules.yy.repository.ReserveRepository;
+import me.zhengjie.modules.yy.repository.ResourceGroupRepository;
 import me.zhengjie.modules.yy.repository.TermRepository;
 import me.zhengjie.modules.yy.service.UserWorkCountService;
+import me.zhengjie.modules.yy.service.dto.ResourceGroupSmallDto;
+import me.zhengjie.modules.yy.service.dto.ResourceSmallDto;
 import me.zhengjie.modules.yy.service.dto.TermSmallDto;
 import me.zhengjie.modules.yy.service.dto.UserReserveCountCriteria;
+import me.zhengjie.modules.yy.service.mapstruct.ResourceGroupSmallMapper;
+import me.zhengjie.modules.yy.service.mapstruct.ResourceSmallMapper;
 import me.zhengjie.modules.yy.service.mapstruct.TermSmallMapper;
 import me.zhengjie.modules.yy.util.TimeUtil;
 import me.zhengjie.utils.FileUtil;
@@ -35,6 +41,9 @@ public class UserWorkCountServiceImpl implements UserWorkCountService {
     private final TermRepository termRepository;
     private final TermSmallMapper termSmallMapper;
 
+    private final ResourceGroupRepository resourceGroupRepository;
+    private final ResourceGroupSmallMapper resourceGroupSmallMapper;
+
     @Override
     public void download(List<UserReserveCount> all, HttpServletResponse response) throws IOException {
         List<Map<String, Object>> list = new ArrayList<>();
@@ -56,14 +65,22 @@ public class UserWorkCountServiceImpl implements UserWorkCountService {
         List<Map<String, Object>> list = new ArrayList<>();
 
         List<TermSmallDto> terms = (List<TermSmallDto>) all.get("terms");
+        List<ResourceGroupSmallDto> resourceGroups = (List<ResourceGroupSmallDto>) all.get("resourceGroups");
         List<Map<String, Object>> users = (List<Map<String, Object>>) all.get("list");
 
         for (Map<String, Object> user : users) {
             Map<String, Object> map = new LinkedHashMap<>();
             map.put("用户ID", user.get("userId"));
             map.put("用户名称", user.get("userName"));
-            for (TermSmallDto term : terms) {
-                map.put(term.getName(), user.get(term.getId().toString()));
+            if (null != terms) {
+                for (TermSmallDto term : terms) {
+                    map.put(term.getName(), user.get(term.getId().toString()));
+                }
+            }
+            if (null != resourceGroups) {
+                for (ResourceGroupSmallDto resourceGroup : resourceGroups) {
+                    map.put(resourceGroup.getName(), user.get(resourceGroup.getId().toString()));
+                }
             }
             map.put("合计", user.get("total"));
             list.add(map);
@@ -92,6 +109,28 @@ public class UserWorkCountServiceImpl implements UserWorkCountService {
             endDate = TimeUtil.getCurrentDate();
         }
         return repository.queryUserReserveCount(comId, beginDate, endDate);
+    }
+
+    @Override
+    public List<UserReserveCountGroup> queryUserReserveCountGroup(UserReserveCountCriteria criteria) {
+        Long comId = criteria.getComId();
+        String beginDate = criteria.getBeginDate();
+        String endDate = criteria.getEndDate();
+
+        JwtUserDto user = (JwtUserDto) SecurityUtils.getCurrentUser();
+        if (!user.isAdmin()) {
+            comId = user.getComId();
+        }
+        if (null == comId) {
+            throw new BadRequestException("comId 不能为空");
+        }
+        if (StringUtils.isEmpty(beginDate)) {
+            beginDate = TimeUtil.getCurrentDate();
+        }
+        if (StringUtils.isEmpty(endDate)) {
+            endDate = TimeUtil.getCurrentDate();
+        }
+        return repository.queryUserReserveCountGroup(comId, beginDate, endDate);
     }
 
     @Override
@@ -169,6 +208,91 @@ public class UserWorkCountServiceImpl implements UserWorkCountService {
                     continue;
                 }
                 Long count = (Long) userMap.get(term.getId().toString());
+                if (null != count) {
+                    total += count;
+                }
+            }
+            userMap.put("total", total);
+        }
+
+        return map;
+    }
+
+    @Override
+    public Map<String, Object> queryUserWorkGroup(UserReserveCountCriteria criteria) {
+        Long orgId = criteria.getOrgId();
+        Long comId = criteria.getComId();
+
+        JwtUserDto user = (JwtUserDto) SecurityUtils.getCurrentUser();
+        if (!user.isAdmin()) {
+            orgId = user.getOrgId();
+            comId = user.getComId();
+        }
+        if (null == orgId) {
+            throw new BadRequestException("orgId 不能为空");
+        }
+        if (null == comId) {
+            throw new BadRequestException("comId 不能为空");
+        }
+
+        Map<String, Object> map = new LinkedHashMap<>();
+
+        // 查询资源分组列表
+        List<ResourceGroupSmallDto> resourceGroupList = resourceGroupSmallMapper.toDto(resourceGroupRepository.findByComId(comId));
+        if (resourceGroupList.isEmpty()) {
+            return new HashMap<>();
+        }
+
+        map.put("resourceGroups", resourceGroupList);
+
+        List<Map<String, Object>> list = new ArrayList<>();
+        map.put("list", list);
+
+        // 查询工作量统计
+        List<UserReserveCountGroup> reserveCountList = queryUserReserveCountGroup(criteria);
+        if (reserveCountList.isEmpty()) {
+            return map;
+        }
+
+        Map<String, Map<String, Object>> userListMap = new LinkedHashMap<>();
+        for (UserReserveCountGroup reserveCount : reserveCountList) {
+            if (null == reserveCount || null == reserveCount.getUserId()) {
+                continue;
+            }
+
+            String userId = reserveCount.getUserId().toString();
+            Map<String, Object> userMap = userListMap.get(userId);
+            if (null == userMap) {
+                userMap = new LinkedHashMap<>();
+                userMap.put("userId", reserveCount.getUserId());
+                userMap.put("userName", reserveCount.getUserName());
+                for (ResourceGroupSmallDto resourceGroup : resourceGroupList) {
+                    if (null == resourceGroup || null == resourceGroup.getId()) {
+                        continue;
+                    }
+                    userMap.put(resourceGroup.getId().toString(), 0L);
+                }
+                userListMap.put(userId, userMap);
+            }
+
+            if (null == reserveCount.getResourceGroupId()) {
+                continue;
+            }
+            String resourceGroupId = reserveCount.getResourceGroupId().toString();
+            Long count = (Long) userMap.get(resourceGroupId);
+            count += reserveCount.getCount();
+            userMap.put(resourceGroupId, count);
+        }
+
+        list.addAll(userListMap.values());
+
+        for (Map<String, Object> userMap : list) {
+            long total = 0;
+            for (ResourceGroupSmallDto resourceGroup : resourceGroupList) {
+                if (null == resourceGroup || null == resourceGroup.getId()) {
+                    continue;
+                }
+                Long count = (Long) userMap.get(resourceGroup.getId().toString());
                 if (null != count) {
                     total += count;
                 }

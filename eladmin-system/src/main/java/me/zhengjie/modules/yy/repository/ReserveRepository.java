@@ -284,4 +284,21 @@ public interface ReserveRepository extends JpaRepository<Reserve, Long>, JpaSpec
     )
     List<UserReserveCount> queryUserReserveCount(Long comId, String beginDate, String endDate);
 
+    /**
+     * 查询用户工作量
+     *
+     * @param comId .
+     * @param beginDate .
+     * @param endDate .
+     * @return .
+     */
+    @Query(
+            value = "" +
+                    "select new me.zhengjie.modules.yy.domain.UserReserveCountGroup(ro.id, ro.nickName, r.resourceGroup.id, r.resourceGroup.name, r.date, count(r)) " +
+                    "from Reserve r " +
+                    "inner join r.operators ro " +
+                    "where r.comId = ?1 and r.date >= ?2 and r.date <= ?3 and r.status = '1' and r.verifyStatus = 'verified' " +
+                    "group by ro.id, r.resourceGroup.id, r.date "
+    )
+    List<UserReserveCountGroup> queryUserReserveCountGroup(Long comId, String beginDate, String endDate);
 }

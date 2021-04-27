@@ -46,6 +46,14 @@ public class ReserveResourceController {
         return new ResponseEntity<>(reserveResourceService.queryReserveCount(criteria), HttpStatus.OK);
     }
 
+    @Log("查询预约资源统计")
+    @ApiOperation("查询预约资源统计")
+    @GetMapping("/reserveCount2")
+    @AnonymousAccess
+    public ResponseEntity<Object> reserveCount2(ReserveCountCriteria criteria) throws Exception {
+        return new ResponseEntity<>(reserveResourceService.queryReserveCount2(criteria), HttpStatus.OK);
+    }
+
     @Log("查询预约资源")
     @ApiOperation("查询预约资源")
     @GetMapping

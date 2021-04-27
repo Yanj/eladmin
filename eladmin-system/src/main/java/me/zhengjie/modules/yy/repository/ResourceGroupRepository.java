@@ -22,7 +22,7 @@ public interface ResourceGroupRepository extends JpaRepository<ResourceGroup, Lo
      */
     @Query(
             value = "" +
-                    "select new me.zhengjie.modules.yy.domain.ResourceGroupCount(rg.id, min(rc.count), max(rc.count), count(rc.count)) " +
+                    "select new me.zhengjie.modules.yy.domain.ResourceGroupCount(rg.id, rg.name, min(rc.count), max(rc.count), count(rc.count)) " +
                     "from ResourceGroup rg " +
                     "left join rg.resourceCategories rc on rc.status = '1' " +
                     "where rg.comId = ?1 and rg.status = '1' " +

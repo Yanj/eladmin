@@ -1,6 +1,7 @@
 package me.zhengjie.modules.yy.service;
 
 import me.zhengjie.modules.yy.domain.UserReserveCount;
+import me.zhengjie.modules.yy.domain.UserReserveCountGroup;
 import me.zhengjie.modules.yy.service.dto.UserReserveCountCriteria;
 
 import javax.servlet.http.HttpServletResponse;
@@ -46,6 +47,22 @@ public interface UserWorkCountService {
      * @param criteria .
      * @return .
      */
+    List<UserReserveCountGroup> queryUserReserveCountGroup(UserReserveCountCriteria criteria);
+
+    /**
+     * 查询用户工作量
+     *
+     * @param criteria .
+     * @return .
+     */
     Map<String, Object> queryUserWorkCount(UserReserveCountCriteria criteria);
+
+    /**
+     * 查询用户工作量
+     *
+     * @param criteria .
+     * @return .
+     */
+    Map<String, Object> queryUserWorkGroup(UserReserveCountCriteria criteria);
 
 }

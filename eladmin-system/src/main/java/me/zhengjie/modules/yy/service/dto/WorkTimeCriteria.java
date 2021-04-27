@@ -19,4 +19,10 @@ public class WorkTimeCriteria extends BaseCriteria implements Serializable {
     @Query
     private YesNoEnum status;
 
+    @Query(type = Query.Type.GREATER_THAN, propName = "beginTime")
+    private String beginTime;
+
+    @Query(type = Query.Type.LESS_THAN, propName = "endTime")
+    private String endTime;
+
 }

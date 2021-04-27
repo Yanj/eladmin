@@ -46,6 +46,14 @@ public class UserWorkCountController {
 
     @Log("查询工作量统计")
     @ApiOperation("查询工作量统计")
+    @GetMapping("/downloadCountGroup")
+    @AnonymousAccess
+    public void downloadUserWorkCountGroup(HttpServletResponse response, UserReserveCountCriteria criteria) throws IOException {
+        reserveService.download(reserveService.queryUserWorkGroup(criteria), response);
+    }
+
+    @Log("查询工作量统计")
+    @ApiOperation("查询工作量统计")
     @GetMapping("/list")
     @AnonymousAccess
     public ResponseEntity<Object> queryUserWorkCount(UserReserveCountCriteria criteria) {
@@ -58,6 +66,14 @@ public class UserWorkCountController {
     @AnonymousAccess
     public ResponseEntity<Object> queryUserWorkCountList(UserReserveCountCriteria criteria) {
         return new ResponseEntity<>(reserveService.queryUserWorkCount(criteria), HttpStatus.OK);
+    }
+
+    @Log("查询工作量统计")
+    @ApiOperation("查询工作量统计")
+    @GetMapping("/group")
+    @AnonymousAccess
+    public ResponseEntity<Object> queryUserWorkCountGroup(UserReserveCountCriteria criteria) {
+        return new ResponseEntity<>(reserveService.queryUserWorkGroup(criteria), HttpStatus.OK);
     }
 
 }

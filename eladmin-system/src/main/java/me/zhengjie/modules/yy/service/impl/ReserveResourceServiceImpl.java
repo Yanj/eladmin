@@ -11,10 +11,7 @@ import me.zhengjie.modules.yy.repository.ReserveResourceRepository;
 import me.zhengjie.modules.yy.repository.ResourceGroupRepository;
 import me.zhengjie.modules.yy.repository.WorkTimeRepository;
 import me.zhengjie.modules.yy.service.ReserveResourceService;
-import me.zhengjie.modules.yy.service.dto.ReserveCountCriteria;
-import me.zhengjie.modules.yy.service.dto.ReserveResourceCriteria;
-import me.zhengjie.modules.yy.service.dto.ReserveResourceDto;
-import me.zhengjie.modules.yy.service.dto.WorkTimeCriteria;
+import me.zhengjie.modules.yy.service.dto.*;
 import me.zhengjie.modules.yy.service.mapstruct.ReserveResourceMapper;
 import me.zhengjie.modules.yy.util.TimeUtil;
 import me.zhengjie.utils.*;
@@ -226,6 +223,138 @@ public class ReserveResourceServiceImpl implements ReserveResourceService {
         return list;
     }
 
+    @Override
+    public Map<String, Object> queryReserveCount2(ReserveCountCriteria criteria) throws Exception {
+        JwtUserDto user = (JwtUserDto) SecurityUtils.getCurrentUser();
+        if (!user.isAdmin()) {
+            criteria.setUser(user);
+        }
+        if (null == criteria.getComId()) {
+            throw new BadRequestException("comId 不能为空");
+        }
+
+        // 查询工作时间段列表
+        WorkTimeCriteria workTimeCriteria = new WorkTimeCriteria();
+        workTimeCriteria.setOrgId(user.getOrgId());
+        if (user.isAdmin()) {
+            workTimeCriteria.setComId(criteria.getComId());
+        } else {
+            workTimeCriteria.setComId(user.getComId());
+        }
+        workTimeCriteria.setStatus(YesNoEnum.YES);
+        workTimeCriteria.setBeginTime(criteria.getBeginTime());
+        workTimeCriteria.setEndTime(criteria.getEndTime());
+        List<WorkTime> workTimeList = workTimeRepository.findAll((root, criteriaQuery, criteriaBuilder) -> QueryHelp.getPredicate(root,
+                workTimeCriteria, criteriaBuilder));
+
+        if (StringUtils.isEmpty(criteria.getBeginDate())) {
+            criteria.setBeginDate(TimeUtil.getCurrentDate());
+        }
+        if (StringUtils.isEmpty(criteria.getEndDate())) {
+            criteria.setEndDate(TimeUtil.getCurrentDate(7));
+        }
+
+        // 查询日期列表
+        List<String> dateList = getReserveDateList(criteria.getBeginDate(), criteria.getEndDate());
+        // 查询资源统计列表
+        List<ReserveResourceGroupCount> reserveResourceGroupCountList = repository.findResourceGroupCountByComIdAndDate(criteria.getComId(),
+                dateList.get(0),
+                dateList.get(dateList.size() - 1));
+
+        // 查询可用资源最小数量
+        List<ResourceGroupCount> resourceGroupCountList = resourceGroupRepository.findCountByComId(criteria.getComId());
+
+        Map<String, Object> res = new HashMap<>();
+
+        // 处理时间列表
+        List<Map<String, Object>> timeList = new ArrayList<>();
+        for (String date : dateList) {
+            for (WorkTime workTime : workTimeList) {
+                Map<String, Object> item = new HashMap<>();
+                item.put("date", date);
+                item.put("workTime", workTime);
+                timeList.add(item);
+            }
+        }
+        res.put("times", timeList);
+
+        // 处理列表
+        List<Map<String, Object>> list = new ArrayList<>();
+        // 遍历资源组
+        for (ResourceGroupCount resourceGroupCount : resourceGroupCountList) {
+            if (null == resourceGroupCount) {
+                continue;
+            }
+
+            Map<String, Object> item = processItem(resourceGroupCount, dateList, workTimeList, reserveResourceGroupCountList);
+
+            list.add(item);
+        }
+        res.put("list", list);
+
+        return res;
+    }
+
+    private Map<String, Object> processItem(ResourceGroupCount resourceGroupCount, List<String> dateList, List<WorkTime> workTimeList, List<ReserveResourceGroupCount> reserveResourceGroupCountList) {
+        Map<String, Object> item = new LinkedHashMap<>();
+        ResourceGroupSmallDto resourceGroup = new ResourceGroupSmallDto();
+        resourceGroup.setId(resourceGroupCount.getResourceGroupId());
+        resourceGroup.setName(resourceGroupCount.getResourceGroupName());
+        item.put("resourceGroup", resourceGroup);
+
+        List<Map<String, Object>> timeList = new ArrayList<>();
+
+        // 遍历日期
+        for (String date : dateList) {
+            // 遍历工作时段
+            for (WorkTime workTime : workTimeList) {
+                // date: '', workTime: {}, use: , count: , left:
+                Map<String, Object> timeItem = new HashMap<>();
+                timeItem.put("date", date);
+                timeItem.put("workTime", workTime);
+
+                long count = resourceGroupCount.getMin();
+                timeItem.put("count", count);
+
+                // 遍历已预约数量
+                ReserveResourceGroupCount useCount = getReserveResourceGroupCountBy(reserveResourceGroupCountList, date, workTime, resourceGroupCount);
+                long usedCount = 0;
+                if (null != useCount) {
+                    usedCount = useCount.getCount();
+                }
+                timeItem.put("used", usedCount);
+                timeItem.put("left", count - usedCount);
+
+                timeList.add(timeItem);
+                item.put("list", timeList);
+            }
+        }
+
+        return item;
+    }
+
+    private ReserveResourceGroupCount getReserveResourceGroupCountBy(List<ReserveResourceGroupCount> reserveResourceGroupCountList, String date,
+                                                                     WorkTime workTime, ResourceGroupCount resourceGroupCount) {
+        ReserveResourceGroupCount useCount = null;
+        for (ReserveResourceGroupCount reserveResourceGroupCount : reserveResourceGroupCountList) {
+            if (null == reserveResourceGroupCount) {
+                continue;
+            }
+            if (!StringUtils.equals(date, reserveResourceGroupCount.getDate())) {
+                continue;
+            }
+            if (!Objects.equals(workTime.getId(), reserveResourceGroupCount.getWorkTimeId())) {
+                continue;
+            }
+            if (!Objects.equals(resourceGroupCount.getResourceGroupId(), reserveResourceGroupCount.getResourceGroupId())) {
+                continue;
+            }
+            useCount = reserveResourceGroupCount;
+            break;
+        }
+        return useCount;
+    }
+
     private List<String> getReserveDateList(String beginDate, String endDate) throws Exception {
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
         LocalDate date = LocalDate.parse(beginDate, formatter);
@@ -236,7 +365,7 @@ public class ReserveResourceServiceImpl implements ReserveResourceService {
             dateList.add(date.format(formatter));
             date = date.plus(1, ChronoUnit.DAYS);
             i++;
-        } while(date.compareTo(end) <= 0 && i < 14);
+        } while (date.compareTo(end) <= 0 && i < 14);
         return dateList;
     }
 

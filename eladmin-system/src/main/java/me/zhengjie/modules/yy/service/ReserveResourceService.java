@@ -80,4 +80,12 @@ public interface ReserveResourceService {
      * @return .
      */
     List<Map<String, Object>> queryReserveCount(ReserveCountCriteria criteria) throws Exception;
+
+    /**
+     * 查询预约资源统计
+     *
+     * @param criteria .
+     * @return .
+     */
+    Map<String, Object> queryReserveCount2(ReserveCountCriteria criteria) throws Exception;
 }
