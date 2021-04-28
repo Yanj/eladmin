@@ -26,7 +26,8 @@ public interface ResourceGroupRepository extends JpaRepository<ResourceGroup, Lo
                     "from ResourceGroup rg " +
                     "left join rg.resourceCategories rc on rc.status = '1' " +
                     "where rg.comId = ?1 and rg.status = '1' " +
-                    "group by rg.id" +
+                    "group by rg.id " +
+                    "order by rg.sort asc " +
                     ""
     )
     List<ResourceGroupCount> findCountByComId(Long comId);
