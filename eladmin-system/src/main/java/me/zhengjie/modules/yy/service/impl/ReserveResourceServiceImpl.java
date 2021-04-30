@@ -18,7 +18,9 @@ import me.zhengjie.utils.*;
 import me.zhengjie.utils.enums.YesNoEnum;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -244,8 +246,10 @@ public class ReserveResourceServiceImpl implements ReserveResourceService {
         workTimeCriteria.setStatus(YesNoEnum.YES);
         workTimeCriteria.setBeginTime(criteria.getBeginTime());
         workTimeCriteria.setEndTime(criteria.getEndTime());
-        List<WorkTime> workTimeList = workTimeRepository.findAll((root, criteriaQuery, criteriaBuilder) -> QueryHelp.getPredicate(root,
-                workTimeCriteria, criteriaBuilder));
+        Pageable pageable = PageRequest.of(0, 1000, Sort.by(Sort.Order.asc("beginTime")));
+        Page<WorkTime> workTimePage = workTimeRepository.findAll((root, criteriaQuery, criteriaBuilder) -> QueryHelp.getPredicate(root,
+                workTimeCriteria, criteriaBuilder), pageable);
+        List<WorkTime> workTimeList = workTimePage.toList();
 
         if (StringUtils.isEmpty(criteria.getBeginDate())) {
             criteria.setBeginDate(TimeUtil.getCurrentDate());
