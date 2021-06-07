@@ -133,7 +133,7 @@ public class ReserveServiceImpl implements ReserveService {
     @Override
     public void automaticCancel() {
         String date = TimeUtil.getCurrentDate();
-        List<Reserve> list = repository.findByStatusAndDate(ReserveVerifyStatus.init, date);
+        List<Reserve> list = repository.findByVerifyStatusAndDate(ReserveVerifyStatus.init, date);
         if (null != list && !list.isEmpty()) {
             for (Reserve reserve : list) {
                 try {

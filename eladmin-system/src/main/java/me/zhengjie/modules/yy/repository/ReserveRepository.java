@@ -120,8 +120,8 @@ public interface ReserveRepository extends JpaRepository<Reserve, Long>, JpaSpec
      * @param date
      * @return
      */
-    @Query(value = "from Reserve where status = ?1 and date < ?2")
-    List<Reserve> findByStatusAndDate(ReserveVerifyStatus status, String date);
+    @Query(value = "from Reserve where verifyStatus = ?1 and date < ?2")
+    List<Reserve> findByVerifyStatusAndDate(ReserveVerifyStatus status, String date);
 
     /**
      * 锁行更新
@@ -156,7 +156,8 @@ public interface ReserveRepository extends JpaRepository<Reserve, Long>, JpaSpec
             "and r.patientTerm.id = ?2 " +
             "and r.date = ?3 " +
             "and r.workTime.id = ?4 " +
-            "and r.status <> 'canceled'")
+            "and r.status = '1' " +
+            "and r.verifyStatus <> 'canceled'")
     Long countByPatientTerm(Long patientId, Long patientTermId, String date, Long workTimeId);
 
     /**
