@@ -34,6 +34,9 @@ public class PatientTermCriteria extends BaseCriteria implements Serializable {
     @Query(type = Query.Type.INNER_LIKE, joinName = "patient", propName = "name")
     private String patientName;
 
+    @Query(type = Query.Type.INNER_LIKE, joinName = "patient", propName = "phone")
+    private String patientPhone;
+
     @Query
     private YesNoEnum status;
 
